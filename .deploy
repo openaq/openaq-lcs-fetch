@@ -1,0 +1,8 @@
+{
+    "profile": "devseed",
+    "artifacts": {
+        "lambda": [
+            "devseed-artifacts/open-aq/lambda-{{gitsha}}.zip"
+        ]
+    }
+}
