@@ -10,6 +10,6 @@ echo "ok - ${GITSHA}"
 yarn install
 zip -qr /tmp/${GITSHA}.zip *
 
-aws s3 cp ./package.zip s3://devseed-artifacts/${REPO}/lambda-${GITSHA}.zip
+aws s3 cp /tmp/${GITSHA}.zip s3://devseed-artifacts/${REPO}/lambda-${GITSHA}.zip
 
-rm ./package.zip
+rm /tmp/${GITSHA}.zip
