@@ -57,6 +57,13 @@ const Resources = {
                 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
             ]
         }
+    },
+    FetcherQueue: {
+        Type: 'AWS::SQS::Queue',
+        Properties: {
+            QueueName: cf.join('-', [cf.stackName, 'fetch-queue']),
+            VisibilityTimeout: 2880
+        }
     }
 };
 
