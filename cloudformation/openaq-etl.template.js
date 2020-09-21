@@ -3,6 +3,11 @@
 const fs = require('fs');
 const path = require('path');
 const cf = require('@mapbox/cloudfriend');
+const schedule = require('./schedule');
+
+const minute = [];
+const hour = [];
+const day = [];
 
 for (let source of fs.readdirSync(path.resolve(__dirname, '../sources/'))) {
     source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../sources/', source)))
@@ -34,5 +39,9 @@ const Resources = {
 
 module.exports = cf.merge({
     Parameters,
-    Resources
-});
+    Resources,
+},
+    schedule('Minute', minute, '* * ? * * *'),
+    schedule('Hour', hour, '0 * ? * * *'),
+    schedule('Day', day, '0 0 * * ?  *')
+);

@@ -2,7 +2,7 @@
     "profile": "devseed",
     "artifacts": {
         "lambda": [
-            "devseed-artifacts/open-aq/lambda-{{gitsha}}.zip"
+            "devseed-artifacts/{{project}}/lambda-{{gitsha}}.zip"
         ]
     }
 }
