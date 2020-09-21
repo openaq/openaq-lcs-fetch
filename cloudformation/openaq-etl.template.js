@@ -9,9 +9,12 @@ const minute = [];
 const hour = [];
 const day = [];
 
-for (let source of fs.readdirSync(path.resolve(__dirname, '../sources/'))) {
-    source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../sources/', source)))
+for (const source_name of fs.readdirSync(path.resolve(__dirname, '../sources/'))) {
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../sources/', source_name)))
 
+    if (source.frequency === 'minute') minute.push(path.parse(source_name).name);
+    if (source.frequency === 'hour') hour.push(path.parse(source_name).name);
+    if (source.frequency === 'day') day.push(path.parse(source_name).name);
 }
 
 const Parameters = {
