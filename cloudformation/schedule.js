@@ -20,6 +20,17 @@ function schedule(name, sources, cron) {
                     Action: ['sts:AssumeRole']
                 }]
             },
+            Path: '/',
+            Policies: [{
+                PolicyName: 'openaq-submit',
+                PolicyDocument: {
+                    Statement: [{
+                        Effect: 'Allow',
+                        Action: ['sqs:SendMessage'],
+                        Resource: cf.getAtt('FetcherQueue', 'Arn')
+                    }]
+                }
+            }],
             ManagedPolicyArns: [
                 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
             ]
