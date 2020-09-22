@@ -53,6 +53,22 @@ const Resources = {
                     Action: ['sts:AssumeRole']
                 }]
             },
+            Path: '/',
+            Policies: [{
+                PolicyName: 'openaq-submit',
+                PolicyDocument: {
+                    Statement: [{
+                        Effect: 'Allow',
+                        Action: [
+                            'sqs:ReceiveMessage',
+                            'sqs:DeleteMessage',
+                            'sqs:GetQueueAttributes',
+                            'sqs:ChangeMessageVisibility'
+                        ],
+                        Resource: cf.getAtt('FetcherQueue', 'Arn')
+                    }]
+                }
+            }],
             ManagedPolicyArns: [
                 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
             ]
