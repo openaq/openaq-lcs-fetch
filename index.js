@@ -5,12 +5,15 @@ if (require.main === module) {
     handler();
 }
 
-function handler() {
-    if (!process.env.SOURCE) throw new Error('SOURCE env var required');
+function handler(event) {
+    const source_name = process.env.SOURCE || event.Records[0].body;
+    if (!source_name) throw new Error('SOURCE env var or event required');
 
-    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', process.env.SOURCE + '.json')));
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', source_name + '.json')));
 
-    console.error(source);
+    console.error(source)
+
+    return {};
 }
 
 module.exports.handler = handler;
