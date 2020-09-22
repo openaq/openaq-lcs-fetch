@@ -52,13 +52,33 @@ function schedule(name, sources, cron) {
         Type: 'AWS::Lambda::Function',
         Properties: {
             Description: `OpenAQ ${name} Fetcher`,
+            Environment: {
+                Variables: {
+                    QUEUE: cf.ref('FetcherQueue')
+                }
+            },
             Code: {
                 ZipFile: `
+                    const AWS = require('aws-sdk');
+                    const sqs = new AWS.SQS();
+
                     function handler() {
-                        const AWS = require('aws-sdk');
                         const sources = JSON.parse('${JSON.stringify(sources)}');
 
-                        //TODO Write to SQS
+                        send(sources);
+                    }
+
+                    function send(sources) {
+                        if (!sources.length) return;
+
+                        sqs.sendMessage({
+                            MessageBody: sources.pop(),
+                            QueueUrl: process.env.QUEUE
+                        }, (err) => {
+                            if (err) console.error(err);
+
+                            send(sources)
+                        });
                     }
 
                     module.exports.handler = handler;
