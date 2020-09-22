@@ -80,6 +80,15 @@ const Resources = {
             QueueName: cf.join('-', [cf.stackName, 'fetch-queue']),
             VisibilityTimeout: 2880
         }
+    },
+    FetchEventMap: {
+        Type: 'AWS::Lambda::EventSourceMapping',
+        Properties: {
+            BatchSize: 1,
+            Enabled: true,
+            EventSourceArn: cf.getAtt('FetcherQueue', 'Arn'),
+            FunctionName: cf.getAtt('LambdaFetcher', 'Arn')
+        }
     }
 };
 
