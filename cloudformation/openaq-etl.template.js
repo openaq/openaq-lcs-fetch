@@ -10,7 +10,7 @@ const hour = [];
 const day = [];
 
 for (const source_name of fs.readdirSync(path.resolve(__dirname, '../sources/'))) {
-    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../sources/', source_name)))
+    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../sources/', source_name)));
 
     if (source.frequency === 'minute') minute.push(path.parse(source_name).name);
     if (source.frequency === 'hour') hour.push(path.parse(source_name).name);
@@ -33,7 +33,7 @@ const Resources = {
                 S3Bucket: 'devseed-artifacts',
                 S3Key: cf.join(['openaq-etl/lambda-', cf.ref('GitSha'), '.zip'])
             },
-            Role: cf.getAtt(`LambdaFetcherRole`, 'Arn'),
+            Role: cf.getAtt('LambdaFetcherRole', 'Arn'),
             Handler: 'index.handler',
             MemorySize: 128,
             Runtime: 'nodejs12.x',
@@ -95,9 +95,9 @@ const Resources = {
 
 module.exports = cf.merge({
     Parameters,
-    Resources,
+    Resources
 },
-    schedule('Minute', minute, 'cron(* * * * ? *)'),
-    schedule('Hour', hour, 'cron(00 * * * ? *)'),
-    schedule('Day', day, 'cron(00 00 * * ? *)')
+schedule('Minute', minute, 'cron(* * * * ? *)'),
+schedule('Hour', hour, 'cron(00 * * * ? *)'),
+schedule('Day', day, 'cron(00 00 * * ? *)')
 );
