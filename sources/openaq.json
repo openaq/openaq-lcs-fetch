@@ -1,6 +1,6 @@
 {
     "provider": "openaq",
-    "url": "https://api.openaq.org/v1/latest",
+    "url": "https://api.openaq.org",
     "license": "CC BY 4.0",
     "frequency": "minute"
 }

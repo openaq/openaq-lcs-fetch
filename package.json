@@ -9,6 +9,9 @@
         "lint": "eslint cloudformation/**.js lib/**/*.js index.js"
     },
     "dependencies": {
+        "request": "^2.88.2"
+    },
+    "devDependencies": {
         "@mapbox/cloudfriend": "^4.2.3",
         "eslint": "^7.9.0",
         "eslint-plugin-node": "^11.1.0"
