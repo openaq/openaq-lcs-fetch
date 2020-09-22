@@ -1,17 +1,18 @@
 const fs = require('fs');
 const path = require('path');
+const providers = new (require('./lib/providers'))();
 
 if (require.main === module) {
     handler();
 }
 
 function handler(event) {
+    if (!process.env.SOURCE && !event) throw new Error('SOURCE env var or event required');
     const source_name = process.env.SOURCE || event.Records[0].body;
-    if (!source_name) throw new Error('SOURCE env var or event required');
 
     const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', source_name + '.json')));
 
-    console.error(source)
+    providers.process(source);
 
     return {};
 }
