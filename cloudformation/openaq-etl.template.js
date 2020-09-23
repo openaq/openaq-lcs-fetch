@@ -45,7 +45,7 @@ const Resources = {
             },
             Role: cf.getAtt('LambdaFetcherRole', 'Arn'),
             Handler: 'index.handler',
-            MemorySize: 128,
+            MemorySize: 512,
             Runtime: 'nodejs12.x',
             Timeout: '900'
         }
