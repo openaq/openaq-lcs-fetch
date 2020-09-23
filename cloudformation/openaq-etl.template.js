@@ -21,6 +21,10 @@ const Parameters = {
     GitSha: {
         Type: 'String',
         Description: 'Gitsha to Deploy'
+    },
+    Bucket: {
+        Type: 'String',
+        Description: 'Bucket to write ETL data'
     }
 };
 
@@ -29,6 +33,12 @@ const Resources = {
         Type: 'AWS::Lambda::Function',
         Properties: {
             Description: 'Fetch a single source for a given time period',
+            Environment: {
+                Variables: {
+                    BUCKET: cf.ref('BUCKET'),
+                    STACK: cf.stackName
+                }
+            },
             Code: {
                 S3Bucket: 'devseed-artifacts',
                 S3Key: cf.join(['openaq-etl/lambda-', cf.ref('GitSha'), '.zip'])
