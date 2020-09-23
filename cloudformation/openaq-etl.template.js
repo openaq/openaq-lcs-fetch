@@ -70,6 +70,12 @@ const Resources = {
                     Statement: [{
                         Effect: 'Allow',
                         Action: [
+                            's3:putObject'
+                        ],
+                        Resource: cf.join(['arn:aws:s3:::', cf.ref('Bucket'), '/', cf.stackName, '/'])
+                    },{
+                        Effect: 'Allow',
+                        Action: [
                             'sqs:ReceiveMessage',
                             'sqs:DeleteMessage',
                             'sqs:GetQueueAttributes',
