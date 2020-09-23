@@ -35,7 +35,7 @@ const Resources = {
             Description: 'Fetch a single source for a given time period',
             Environment: {
                 Variables: {
-                    BUCKET: cf.ref('BUCKET'),
+                    BUCKET: cf.ref('Bucket'),
                     STACK: cf.stackName
                 }
             },
