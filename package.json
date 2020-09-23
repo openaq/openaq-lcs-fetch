@@ -9,6 +9,7 @@
         "lint": "eslint cloudformation/**.js lib/**/*.js index.js"
     },
     "dependencies": {
+        "aws-sdk": "^2.758.0",
         "request": "^2.88.2"
     },
     "devDependencies": {
