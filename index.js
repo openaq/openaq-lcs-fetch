@@ -9,14 +9,20 @@ if (require.main === module) {
 }
 
 async function handler(event) {
-    if (!process.env.SOURCE && !event) throw new Error('SOURCE env var or event required');
-    const source_name = process.env.SOURCE || event.Records[0].body;
+    try {
+        if (!process.env.SOURCE && !event) throw new Error('SOURCE env var or event required');
 
-    const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', source_name + '.json')));
+        const source_name = process.env.SOURCE || event.Records[0].body;
 
-    await providers.process(source);
+        const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', source_name + '.json')));
 
-    return {};
+        await providers.process(source);
+
+        return {};
+    } catch (err) {
+        console.error(err.message);
+        process.exit(1);
+    }
 }
 
 module.exports.handler = handler;
