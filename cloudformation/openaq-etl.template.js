@@ -70,9 +70,9 @@ const Resources = {
                     Statement: [{
                         Effect: 'Allow',
                         Action: [
-                            's3:putObject'
+                            's3:*'
                         ],
-                        Resource: cf.join(['arn:aws:s3:::', cf.ref('Bucket'), '/', cf.stackName, '/'])
+                        Resource: cf.join(['arn:aws:s3:::', cf.ref('Bucket'), '/', cf.stackName, '/*'])
                     },{
                         Effect: 'Allow',
                         Action: [
