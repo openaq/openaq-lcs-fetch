@@ -25,6 +25,10 @@ const Parameters = {
     Bucket: {
         Type: 'String',
         Description: 'Bucket to write ETL data'
+    },
+    SecretPurpleAir: {
+        Type: 'String',
+        Description: 'PurpleAir API Token'
     }
 };
 
@@ -37,6 +41,7 @@ const Resources = {
                 Variables: {
                     BUCKET: cf.ref('Bucket'),
                     STACK: cf.stackName
+                    SecretPurpleAir: cf.ref('SecretPurpleAir'),
                 }
             },
             Code: {
