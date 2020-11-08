@@ -1,6 +1,6 @@
 {
     "provider": "purpleair",
-    "url": "https://api.openaq.org/v1/latest",
-    "license": "CC BY 4.0",
+    "url": "https://api.purpleair.com/",
+    "license": "unknown",
     "frequency": "minute"
 }

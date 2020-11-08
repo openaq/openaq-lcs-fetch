@@ -11,14 +11,15 @@ if (require.main === module) {
 async function handler(event) {
     try {
         if (!process.env.SOURCE && !event) throw new Error('SOURCE env var or event required');
-        if (!process.env.STACK) throw new Error('STACK env var required');
         if (!process.env.BUCKET) throw new Error('BUCKET env var required');
+
+        if (!process.env.STACK) process.env.STACK = 'local';
 
         const source_name = process.env.SOURCE || event.Records[0].body;
 
         const source = JSON.parse(fs.readFileSync(path.resolve(__dirname, './sources/', source_name + '.json')));
 
-        await providers.process(source_name, source);
+        await providers.processor(source_name, source);
 
         return {};
     } catch (err) {
