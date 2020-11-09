@@ -23,7 +23,7 @@ async function handler(event) {
 
         return {};
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         process.exit(1);
     }
 }
