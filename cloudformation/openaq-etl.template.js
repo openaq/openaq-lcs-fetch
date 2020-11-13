@@ -40,7 +40,7 @@ const Resources = {
             Environment: {
                 Variables: {
                     BUCKET: cf.ref('Bucket'),
-                    STACK: cf.stackName
+                    STACK: cf.stackName,
                     SecretPurpleAir: cf.ref('SecretPurpleAir'),
                 }
             },
