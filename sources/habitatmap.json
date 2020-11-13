@@ -1,0 +1,6 @@
+{
+    "provider": "habitatmap",
+    "url": "http://aircasting.habitatmap.org",
+    "license": "unknown",
+    "frequency": "minute"
+}
