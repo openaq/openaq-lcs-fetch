@@ -18,6 +18,14 @@ Or update to the latest GitSha or CloudFormation template via:
 deploy update production
 ```
 
+Alternatively if you do not want to install the deploy tools, a raw CloudFormation JSON can be compiled by running the following:
+
+```sh
+yarn -s deploy
+```
+
+This JSON document can then be uploaded with standard AWS tools
+
 ### Parameters
 
 #### GitSha
