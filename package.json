@@ -10,11 +10,11 @@
         "deploy": "deploy json"
     },
     "dependencies": {
-        "aws-sdk": "^2.758.0",
         "csv-writer": "^1.6.0",
         "request": "^2.88.2"
     },
     "devDependencies": {
+        "aws-sdk": "^2.758.0",
         "@mapbox/cloudfriend": "^4.2.3",
         "eslint": "^7.9.0",
         "eslint-plugin-node": "^11.1.0",

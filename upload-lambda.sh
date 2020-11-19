@@ -7,7 +7,7 @@ GITSHA=$(git rev-parse HEAD)
 REPO=$(basename $(git rev-parse --show-toplevel))
 echo "ok - ${GITSHA}"
 
-yarn install
+yarn install --prod
 zip -qr /tmp/${GITSHA}.zip *
 
 aws s3 cp /tmp/${GITSHA}.zip s3://devseed-artifacts/${REPO}/lambda-${GITSHA}.zip
