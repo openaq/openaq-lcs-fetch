@@ -45,6 +45,20 @@ s3://{bucket}/{stack-name}/
 
 The Purple API Token (Can be obtained from OpenAQ stafff)
 
+## Development
+
+Javascript Documentation can be obtained by running the following
+
+```
+yarn doc
+```
+
+Tests can be run using the following
+
+```
+yarn test
+```
+
 ## Data Sources
 
 Data Sources can be configured by adding a config file & corresponding provider script. The two sections below
