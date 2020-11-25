@@ -12,6 +12,11 @@ ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'), "http://jso
 
 const validate = ajv.compile(schema);
 
+tape('validate', (t) => {
+    t.ok(validate, 'schema loaded');
+    t.end();
+});
+
 // find all the sources, has to be synchronous for tape
 glob.sync('../sources/**.json').forEach((source) => {
     tape(`tests for ${source}`, (t) => {
