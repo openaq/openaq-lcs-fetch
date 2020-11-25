@@ -8,14 +8,15 @@
     "scripts": {
         "test": "tape test/**.test.js | tap-dot",
         "lint": "eslint cloudformation/**.js lib/**/*.js index.js",
+        "doc": "documentation serve -w index.js",
         "deploy": "deploy json"
     },
     "dependencies": {
         "csv-writer": "^1.6.0",
-        "documentation": "^13.1.0",
         "request": "^2.88.2"
     },
     "devDependencies": {
+        "documentation": "^13.1.0",
         "@mapbox/cloudfriend": "^4.2.3",
         "ajv": "^6.12.6",
         "aws-sdk": "^2.758.0",
