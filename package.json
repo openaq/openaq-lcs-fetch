@@ -12,6 +12,7 @@
     },
     "dependencies": {
         "csv-writer": "^1.6.0",
+        "documentation": "^13.1.0",
         "request": "^2.88.2"
     },
     "devDependencies": {

@@ -41,7 +41,7 @@ const Resources = {
                 Variables: {
                     BUCKET: cf.ref('Bucket'),
                     STACK: cf.stackName,
-                    SecretPurpleAir: cf.ref('SecretPurpleAir'),
+                    SecretPurpleAir: cf.ref('SecretPurpleAir')
                 }
             },
             Code: {
