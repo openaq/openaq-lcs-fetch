@@ -6,6 +6,7 @@
     "author": "ingalls <nick@ingalls.ca>",
     "license": "MIT",
     "scripts": {
+        "test": "test test/**/*.test.js | tap-dot",
         "lint": "eslint cloudformation/**.js lib/**/*.js index.js",
         "deploy": "deploy json"
     },
@@ -14,10 +15,14 @@
         "request": "^2.88.2"
     },
     "devDependencies": {
-        "aws-sdk": "^2.758.0",
         "@mapbox/cloudfriend": "^4.2.3",
+        "ajv": "^6.12.6",
+        "aws-sdk": "^2.758.0",
         "eslint": "^7.9.0",
         "eslint-plugin-node": "^11.1.0",
-        "openaddresses-deploy": "^2.3.0"
+        "glob": "^7.1.6",
+        "openaddresses-deploy": "^2.3.0",
+        "tap-dot": "^2.0.0",
+        "tape": "^5.0.1"
     }
 }

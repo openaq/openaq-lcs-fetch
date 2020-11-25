@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Source",
+    "description": "An OpenAQ source",
+    "type": "object",
+    "required": [
+        "schema",
+        "provider",
+        "frequency",
+        "meta"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "schema": {
+            "type": "string",
+            "enum": [
+                "v1"
+            ]
+        },
+        "frequency": {
+            "type": "string",
+            "enum": [
+                "minute",
+                "hour",
+                "day"
+            ]
+        },
+        "provider": {
+            "type": "string"
+        },
+        "meta": {
+            "type": "object"
+        }
+    }
+}
+
