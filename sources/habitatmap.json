@@ -1,6 +1,8 @@
 {
+    "schema": "v1",
     "provider": "habitatmap",
-    "url": "http://aircasting.habitatmap.org",
-    "license": "unknown",
-    "frequency": "minute"
+    "frequency": "minute",
+    "meta": {
+        "url": "http://aircasting.habitatmap.org"
+    }
 }
