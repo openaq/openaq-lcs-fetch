@@ -13,13 +13,15 @@
     },
     "dependencies": {
         "csv-writer": "^1.6.0",
+        "dayjs": "^1.9.6",
+        "googleapis": "65",
         "request": "^2.88.2"
     },
     "devDependencies": {
-        "documentation": "^13.1.0",
         "@mapbox/cloudfriend": "^4.2.3",
         "ajv": "^6.12.6",
         "aws-sdk": "^2.758.0",
+        "documentation": "^13.1.0",
         "eslint": "^7.9.0",
         "eslint-plugin-node": "^11.1.0",
         "glob": "^7.1.6",
