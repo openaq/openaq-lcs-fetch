@@ -29,5 +29,8 @@
         "openaddresses-deploy": "^2.3.0",
         "tap-dot": "^2.0.0",
         "tape": "^5.0.1"
+    },
+    "engines": {
+        "node": "12"
     }
 }

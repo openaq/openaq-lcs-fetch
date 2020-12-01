@@ -1,7 +1,7 @@
 {
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 8
+        "ecmaVersion": 12
     },
     "env": {
         "node": true,
@@ -36,7 +36,6 @@
         "template-curly-spacing": [ "error", "never" ],
         "semi-spacing": "error",
         "strict": "error",
-        "node/no-unsupported-features": [ "error", { "version": 8 } ],
         "node/no-missing-require": "error",
         "valid-jsdoc": ["warn", {
             "requireParamDescription": false,
