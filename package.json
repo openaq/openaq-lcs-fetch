@@ -21,7 +21,7 @@
     "devDependencies": {
         "@mapbox/cloudfriend": "^4.2.3",
         "ajv": "^6.12.6",
-        "aws-sdk": "^2.758.0",
+        "aws-sdk": "^2.804.0",
         "documentation": "^13.1.0",
         "eslint": "^7.9.0",
         "eslint-plugin-node": "^11.1.0",
