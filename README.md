@@ -41,9 +41,9 @@ The bucket to push station and measure data to. Differing stacks can share a sin
 s3://{bucket}/{stack-name}/
 ```
 
-#### SecretPurpleAir
+### Secrets
 
-The Purple API Token (Can be obtained from OpenAQ stafff)
+For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`
 
 ## Development
 

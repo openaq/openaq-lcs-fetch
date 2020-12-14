@@ -25,10 +25,6 @@ const Parameters = {
     Bucket: {
         Type: 'String',
         Description: 'Bucket to write ETL data'
-    },
-    SecretPurpleAir: {
-        Type: 'String',
-        Description: 'PurpleAir API Token'
     }
 };
 
@@ -40,8 +36,7 @@ const Resources = {
             Environment: {
                 Variables: {
                     BUCKET: cf.ref('Bucket'),
-                    STACK: cf.stackName,
-                    SecretPurpleAir: cf.ref('SecretPurpleAir')
+                    STACK: cf.stackName
                 }
             },
             Code: {
@@ -69,27 +64,43 @@ const Resources = {
                 }]
             },
             Path: '/',
-            Policies: [{
-                PolicyName: 'openaq-submit',
-                PolicyDocument: {
-                    Statement: [{
-                        Effect: 'Allow',
-                        Action: [
-                            's3:*'
-                        ],
-                        Resource: cf.join(['arn:aws:s3:::', cf.ref('Bucket'), '/', cf.stackName, '/*'])
-                    },{
-                        Effect: 'Allow',
-                        Action: [
-                            'sqs:ReceiveMessage',
-                            'sqs:DeleteMessage',
-                            'sqs:GetQueueAttributes',
-                            'sqs:ChangeMessageVisibility'
-                        ],
-                        Resource: cf.getAtt('FetcherQueue', 'Arn')
-                    }]
+            Policies: [
+                {
+                    PolicyName: 'openaq-submit',
+                    PolicyDocument: {
+                        Statement: [{
+                            Effect: 'Allow',
+                            Action: [
+                                's3:*'
+                            ],
+                            Resource: cf.join(['arn:aws:s3:::', cf.ref('Bucket'), '/', cf.stackName, '/*'])
+                        }, {
+                            Effect: 'Allow',
+                            Action: [
+                                'sqs:ReceiveMessage',
+                                'sqs:DeleteMessage',
+                                'sqs:GetQueueAttributes',
+                                'sqs:ChangeMessageVisibility'
+                            ],
+                            Resource: cf.getAtt('FetcherQueue', 'Arn')
+                        }]
+                    }
+                },
+                {
+                    PolicyName: 'openaq-read-secrets',
+                    PolicyDocument: {
+                        Statement: [{
+                            Effect: 'Allow',
+                            Action: [
+                                'secretsmanager:DescribeSecret',
+                                'secretsmanager:GetSecretValue'
+                            ],
+                            Resource: cf.join(['arn:aws:secretsmanager:::secret:', cf.stackName, '*'])
+                        }]
+                    }
+
                 }
-            }],
+            ],
             ManagedPolicyArns: [
                 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
             ]
@@ -114,11 +125,12 @@ const Resources = {
 };
 
 
-module.exports = cf.merge({
-    Parameters,
-    Resources
-},
-schedule('Minute', minute, 'cron(* * * * ? *)'),
-schedule('Hour', hour, 'cron(00 * * * ? *)'),
-schedule('Day', day, 'cron(00 00 * * ? *)')
+module.exports = cf.merge(
+    {
+        Parameters,
+        Resources
+    },
+    schedule('Minute', minute, 'cron(* * * * ? *)'),
+    schedule('Hour', hour, 'cron(00 * * * ? *)'),
+    schedule('Day', day, 'cron(00 00 * * ? *)')
 );
