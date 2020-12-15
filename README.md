@@ -4,27 +4,12 @@
 
 ## Deploy
 
-Before you are able to deploy infrastructure you must first setup the [OpenAddresses Deploy tools](https://github.com/openaddresses/deploy)
-
-Once these are installed, you can create a stack via:
-
-```sh
-deploy create demo
-```
-
-Or update to the latest GitSha or CloudFormation template via:
-
-```sh
-deploy update production
-```
-
-Alternatively if you do not want to install the deploy tools, a raw CloudFormation JSON can be compiled by running the following:
-
-```sh
-yarn -s deploy
-```
-
-This JSON document can then be uploaded with standard AWS tools
+ * `npm run build`   compile typescript to js
+ * `npm run watch`   watch for changes and compile
+ * `npm run test`    perform the jest unit tests
+ * `cdk deploy`      deploy this stack to your default AWS account/region
+ * `cdk diff`        compare deployed stack with current state
+ * `cdk synth`       emits the synthesized CloudFormation template
 
 ### Parameters
 
