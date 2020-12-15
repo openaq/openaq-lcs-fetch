@@ -1,3 +1,4 @@
+'use strict';
 const tape = require('tape');
 const glob = require('glob');
 const fs = require('fs');
