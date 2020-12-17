@@ -4,19 +4,11 @@
 
 ## Deploy
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+ * `yarn cdk deploy`      deploy this stack to your default AWS account/region
+ * `yarn cdk diff`        compare deployed stack with current state
+ * `yarn cdk synth`       emits the synthesized CloudFormation template
 
 ### Parameters
-
-#### GitSha
-
-The GitSha to deploy. Each time a new commit is pushed, github actions will automatically
-build all required lambda/docker resources and push them to s3.
 
 #### Bucket
 
@@ -28,7 +20,7 @@ s3://{bucket}/{stack-name}/
 
 ### Secrets
 
-For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`
+For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`.
 
 ## Development
 
@@ -51,13 +43,17 @@ outline what is necessary to create and a new source.
 
 ### Source Config
 
-The first step for a new source is to add the config file located in the `sources/` directory.
+The first step for a new source is to add an entry to the array located in the `lib/sources.js` directory.
 
 
 ```json
 {
+    "schema": "v1",
     "provider": "example",
-    "frequency": "hour"
+    "frequency": "hour",
+    "meta": {
+
+    }
 }
 ```
 
@@ -69,8 +65,6 @@ The first step for a new source is to add the config file located in the `source
 
 The config file can contain any properties that should be configurable via the
 provider script. The above table however outlines the attributes that are required.
-
-Note that the source should be named `{provider}.json`
 
 ### Provider Script
 
