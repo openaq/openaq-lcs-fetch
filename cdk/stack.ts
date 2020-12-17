@@ -64,7 +64,6 @@ export class EtlPipeline extends cdk.Stack {
                 ],
             })
         );
-        // TODO: Enable Secrets Manager access
         return handler;
     }
 
