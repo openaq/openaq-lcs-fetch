@@ -1,15 +1,14 @@
 {
     "name": "openaq-etl",
     "version": "1.0.0",
-    "main": "index.js",
+    "main": "lib/index.js",
     "repository": "git@github.com:developmentseed/openaq-etl",
     "author": "ingalls <nick@ingalls.ca>",
     "license": "MIT",
     "scripts": {
         "test": "tape test/**.test.js | tap-dot",
-        "lint": "eslint cloudformation/**.js lib/**/*.js index.js",
-        "doc": "documentation serve -w index.js",
-        "deploy": "deploy json"
+        "lint": "eslint 'lib/!(node_modules)/**/*.js' scheduler/**/*.js",
+        "doc": "documentation serve -w lib/**/*.js"
     },
     "dependencies": {
         "csv-parser": "^2.3.3",
