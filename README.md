@@ -8,20 +8,6 @@
  * `yarn cdk diff`        compare deployed stack with current state
  * `yarn cdk synth`       emits the synthesized CloudFormation template
 
-### Parameters
-
-#### Bucket
-
-The bucket to push station and measure data to. Differing stacks can share a single bucket as data will be prefixed.
-
-```
-s3://{bucket}/{stack-name}/
-```
-
-### Secrets
-
-For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`.
-
 ## Development
 
 Javascript Documentation can be obtained by running the following
@@ -105,3 +91,7 @@ async function processor(source_name, source) {
 
 module.exports = { processor };
 ```
+
+### Secrets
+
+For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`.
