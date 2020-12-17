@@ -4,6 +4,7 @@ const glob = require('glob');
 const fs = require('fs');
 const Ajv = require('ajv');
 const schema = require('../schema/v1.json');
+const sources = require('../lib/sources');
 
 const ajv = new Ajv({
     schemaId: 'auto'
@@ -19,12 +20,10 @@ tape('validate', (t) => {
 });
 
 // find all the sources, has to be synchronous for tape
-glob.sync('../sources/**.json').forEach((source) => {
+sources.forEach((source) => {
     tape(`tests for ${source}`, (t) => {
         try {
-            const data = JSON.parse(fs.readFileSync(source, 'utf8'));
-
-            const valid = validate(data);
+            const valid = validate(source);
 
             t.ok(valid, `${source}: ${JSON.stringify(validate.errors)}`);
         } catch (err) {
