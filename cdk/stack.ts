@@ -43,6 +43,7 @@ export class EtlPipeline extends cdk.Stack {
             environment: {
                 BUCKET: props.bucket.bucketName,
                 STACK: cdk.Stack.of(this).stackName,
+                VERBOSE: '1'
             },
         });
         handler.addEventSource(
@@ -51,7 +52,7 @@ export class EtlPipeline extends cdk.Stack {
             })
         );
         props.queue.grantConsumeMessages(handler);
-        props.bucket.grantPut(handler);
+        props.bucket.grantReadWrite(handler);
         handler.addToRolePolicy(
             new iam.PolicyStatement({
                 effect: iam.Effect.ALLOW,
