@@ -1,7 +1,5 @@
 'use strict';
 const tape = require('tape');
-const glob = require('glob');
-const fs = require('fs');
 const Ajv = require('ajv');
 const schema = require('../schema/v1.json');
 const sources = require('../lib/sources');
