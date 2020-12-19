@@ -15,6 +15,7 @@
         "csv-writer": "^1.6.0",
         "dayjs": "^1.9.6",
         "googleapis": "65",
+        "p-limit": "^3.1.0",
         "request": "^2.88.2"
     },
     "devDependencies": {
