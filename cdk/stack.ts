@@ -43,7 +43,8 @@ export class EtlPipeline extends cdk.Stack {
             environment: {
                 BUCKET: props.bucket.bucketName,
                 STACK: cdk.Stack.of(this).stackName,
-                VERBOSE: '1'
+                VERBOSE: '1',
+                LCS_API: 'https://0jac6b9iac.execute-api.us-east-1.amazonaws.com'
             },
         });
         handler.addEventSource(
