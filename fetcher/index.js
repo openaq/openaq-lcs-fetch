@@ -1,4 +1,4 @@
-const providers = new (require('./providers'))();
+const providers = new (require('./lib/providers'))();
 const sources = require('./sources');
 
 if (require.main === module) {

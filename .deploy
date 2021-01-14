@@ -1,8 +1,0 @@
-{
-    "profile": "devseed",
-    "artifacts": {
-        "lambda": [
-            "devseed-artifacts/{{project}}/lambda-{{gitsha}}.zip"
-        ]
-    }
-}

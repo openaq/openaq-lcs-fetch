@@ -1,11 +1,10 @@
 
 
-const { promisify } = require('util');
-const request = promisify(require('request'));
-const Providers = require('../providers');
-const { Sensor, SensorNode, SensorSystem } = require('../station');
-const { Measures, FixedMeasure, MobileMeasure } = require('../measure');
-const { measurandNormalizer, getSupportedLookups } = require('../utils');
+const Providers = require('../lib/providers');
+const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
+const { Measures, FixedMeasure, MobileMeasure } = require('../lib/measure');
+const { Measurand } = require('../lib/measurand');
+const { request } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -14,12 +13,12 @@ const lookup = {
 
 
 async function processor(source_name, source) {
-    const supportedLookups = await getSupportedLookups(lookup);
-    await process_fixed_locations(source_name, source, supportedLookups);
-    await process_mobile_locations(source_name, source, supportedLookups);
+    const measurands = await Measurand.getSupportedMeasurands(lookup);
+    await process_fixed_locations(source_name, source, measurands);
+    await process_mobile_locations(source_name, source, measurands);
 }
 
-async function process_fixed_locations(source_name, source, supportedLookups) {
+async function process_fixed_locations(source_name, source, measurands) {
     const stations = [];
     const measures = new Measures(FixedMeasure);
 
@@ -37,24 +36,23 @@ async function process_fixed_locations(source_name, source, supportedLookups) {
             sensor_system: system
         });
 
-        for (const { input_param, measurand_parameter, measurand_unit } of supportedLookups) {
-            if (!location.streams[input_param]) continue;
+        for (const measurand of measurands) {
+            if (!location.streams[measurand.input_param]) continue;
 
-            const sensor_id = `${sta.sensor_node_source_name}-${location.streams[input_param].id}-${measurand_parameter}`;
-            const normalizedMeasurand = measurandNormalizer(measurand_unit);
+            const sensor_id = `${sta.sensor_node_source_name}-${location.streams[measurand.input_param].id}-${measurand.parameter}`;
 
             const sensor = new Sensor({
                 sensor_id,
-                measurand_parameter,
-                measurand_unit: normalizedMeasurand.unit
+                measurand_parameter: measurand.parameter,
+                measurand_unit: measurand.normalized_unit
             });
             system.sensors.push(sensor);
 
-            const measure = location.streams[input_param].average_value;
+            const measure = location.streams[measurand.input_param].average_value;
             if (measure) continue;
             measures.push({
                 sensor_id,
-                measure: normalizedMeasurand.value(measure),
+                measure: measurand.normalize_value(measure),
                 timestamp: location.end_time_local
             });
         }
@@ -69,7 +67,7 @@ async function process_fixed_locations(source_name, source, supportedLookups) {
     console.log(`ok - all ${measures.length} fixed measures pushed`);
 }
 
-async function process_mobile_locations(source_name, source, supportedLookups) {
+async function process_mobile_locations(source_name, source, measurands) {
     const stations = [];
     const measures = new Measures(MobileMeasure);
 
@@ -86,17 +84,16 @@ async function process_mobile_locations(source_name, source, supportedLookups) {
             sensor_system: system
         });
 
-        for (const { input_param, measurand_parameter, measurand_unit } of supportedLookups) {
-            if (!location.streams[input_param]) continue;
+        for (const measurand of measurands) {
+            if (!location.streams[measurand.input_param]) continue;
 
-            const station_id = location.streams[input_param].id;
-            const sensor_id = `${sta.sensor_node_source_name}-${station_id}-${measurand_parameter}`;
-            const normalizedMeasurand = measurandNormalizer(measurand_unit);
+            const station_id = location.streams[measurand.input_param].id;
+            const sensor_id = `${sta.sensor_node_source_name}-${station_id}-${measurand.parameter}`;
 
             const sensor = new Sensor({
                 sensor_id,
-                measurand_parameter,
-                measurand_unit: normalizedMeasurand.unit
+                measurand_parameter: measurand.parameter,
+                measurand_unit: measurand.normalized_unit
             });
             system.sensors.push(sensor);
 
@@ -104,7 +101,7 @@ async function process_mobile_locations(source_name, source, supportedLookups) {
             for (const measurement of measurements) {
                 measures.push(new MobileMeasure({
                     sensor_id,
-                    measure: normalizedMeasurand.value(measurement.value),
+                    measure: measurand.normalize_value(measurement.value),
                     timestamp: measurement.time,
                     longitude: measurement.longitude,
                     latitude: measurement.latitude

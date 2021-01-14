@@ -1,14 +1,16 @@
-'use strict';
 const tape = require('tape');
 const Ajv = require('ajv');
 const schema = require('../schema/v1.json');
-const sources = require('../lib/sources');
+const sources = require('../fetcher/sources');
 
 const ajv = new Ajv({
     schemaId: 'auto'
 });
 
-ajv.addMetaSchema(require('ajv/lib/refs/json-schema-draft-04.json'), "http://json-schema.org/draft-04/schema#");
+ajv.addMetaSchema(
+    require('ajv/lib/refs/json-schema-draft-04.json'),
+    'http://json-schema.org/draft-04/schema#'
+);
 
 const validate = ajv.compile(schema);
 

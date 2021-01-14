@@ -17,8 +17,9 @@ const unzip = promisify(zlib.unzip);
  */
 class Providers {
     constructor() {
-        for (const file of fs.readdirSync(path.resolve(__dirname, './providers'))) {
-            this[path.parse(file).name] = require('./providers/' + file);
+        const providersDir = '../providers';
+        for (const file of fs.readdirSync(path.resolve(__dirname, providersDir))) {
+            this[path.parse(file).name] = require(`${providersDir}/${file}`);
         }
     }
 

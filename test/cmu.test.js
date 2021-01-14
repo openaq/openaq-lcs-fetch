@@ -3,7 +3,7 @@ const dayjs = require('dayjs')
     .extend(require('dayjs/plugin/utc'))
     .extend(require('dayjs/plugin/timezone'));
 
-const cmu = require('../lib/providers/cmu');
+const cmu = require('../fetcher/providers/cmu');
 
 tape('getMonthQuery works for same month', (t) => {
     t.equal(

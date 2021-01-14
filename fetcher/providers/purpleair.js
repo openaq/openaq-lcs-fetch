@@ -1,9 +1,8 @@
-const { promisify } = require('util');
-const request = promisify(require('request'));
-const Providers = require('../providers');
-const { Sensor, SensorNode, SensorSystem } = require('../station');
-const { Measures, FixedMeasure } = require('../measure');
-const { fetchSecret, measurandNormalizer, getSupportedLookups } = require('../utils');
+const Providers = require('../lib/providers');
+const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
+const { Measures, FixedMeasure } = require('../lib/measure');
+const { Measurand } = require('../lib/measurand');
+const { fetchSecret, request } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -25,10 +24,10 @@ const lookup = {
 
 async function processor(source_name, source) {
     const [
-        supportedLookups,
+        measurands,
         sensorReadings
     ] = await Promise.all([
-        getSupportedLookups(lookup),
+        Measurand.getSupportedMeasurands(lookup),
         fetchSecret(source.provider)
             .then(({ apiKey }) => fetchSensorData(source, apiKey))
     ]);
@@ -50,23 +49,21 @@ async function processor(source_name, source) {
         });
 
         // For each measurement, add a sensor to the sensor system & log measurement
-        for (const { input_param, measurand_parameter, measurand_unit } of supportedLookups) {
-            const measure = reading[input_param];
-            const normalizedMeasurand = measurandNormalizer(measurand_unit);
-
+        for (const measurand of measurands) {
+            const measure = reading[measurand.input_param];
             if ([undefined, null].includes(measure)) continue;
 
             const sensor = new Sensor({
-                sensor_id: `${sensorNode.sensor_node_source_name}-${reading.sensor_index}-${input_param}`,
-                measurand_parameter,
-                measurand_unit: normalizedMeasurand.unit
+                sensor_id: `${sensorNode.sensor_node_source_name}-${reading.sensor_index}-${measurand.input_param}`,
+                measurand_parameter: measurand.parameter,
+                measurand_unit: measurand.normalized_unit
             });
 
             system.sensors.push(sensor);
             measures.push(
                 new FixedMeasure({
                     sensor_id: sensor.sensor_id,
-                    measure: normalizedMeasurand.value(measure),
+                    measure: measurand.normalize_value(measure),
                     timestamp: reading.last_seen
                 })
             );

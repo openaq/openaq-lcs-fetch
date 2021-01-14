@@ -1,14 +1,14 @@
 {
     "name": "openaq-etl",
     "version": "1.0.0",
-    "main": "lib/index.js",
+    "main": "fetcher/index.js",
     "repository": "git@github.com:developmentseed/openaq-etl",
     "author": "ingalls <nick@ingalls.ca>",
     "license": "MIT",
     "scripts": {
         "test": "tape test/**.test.js | tap-dot",
-        "lint": "eslint 'lib/*.js' 'lib/!(node_modules)/**/*.js' scheduler/**/*.js",
-        "doc": "documentation serve -w lib/**/*.js"
+        "lint": "eslint 'fetcher/*.js' 'fetcher/!(node_modules)/**/*.js' scheduler/**/*.js",
+        "doc": "documentation serve -w fetcher/**/*.js"
     },
     "dependencies": {
         "csv-parser": "^2.3.3",

@@ -5,11 +5,12 @@ const dayjs = require('dayjs')
     .extend(require('dayjs/plugin/timezone'))
     .extend(require('dayjs/plugin/customParseFormat'));
 const pLimit = require('p-limit');
-const Providers = require('../providers');
-const { Sensor, SensorNode, SensorSystem } = require('../station');
-const { Measures, FixedMeasure } = require('../measure');
-const { VERBOSE, fetchSecret, measurandNormalizer, getSupportedLookups } = require('../utils');
-const { MetaDetails } = require('../meta');
+const Providers = require('../lib/providers');
+const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
+const { Measures, FixedMeasure } = require('../lib/measure');
+const { Measurand } = require('../lib/measurand');
+const { VERBOSE, fetchSecret } = require('../lib/utils');
+const { MetaDetails } = require('../lib/meta');
 
 /**
 The data is stored in a Google Drive folder at the following address:
@@ -35,10 +36,10 @@ const lookup = {
 async function processor(source_name, source) {
     // https://developers.google.com/identity/protocols/oauth2/service-account
     const [
-        supportedLookups,
+        measurands,
         credentials
     ] = await Promise.all([
-        getSupportedLookups(lookup),
+        Measurand.getSupportedMeasurands(lookup),
         fetchSecret(source.provider)
     ]);
 
@@ -92,7 +93,7 @@ async function processor(source_name, source) {
 
             filesBeingProcessed.push(
                 limit(
-                    () => processFile({ file, timestamp, stations, source_name, drive, supportedLookups })
+                    () => processFile({ file, timestamp, stations, source_name, drive, measurands })
                 )
             );
         }
@@ -133,7 +134,7 @@ function getMonthQuery(from, to) {
         .join(' OR ');
 }
 
-async function processFile({ file, timestamp, stations, source_name, drive, supportedLookups }) {
+async function processFile({ file, timestamp, stations, source_name, drive, measurands }) {
     const measures = new Measures(FixedMeasure);
 
     const readings = await drive.parseCsv(file.id);
@@ -151,12 +152,12 @@ async function processFile({ file, timestamp, stations, source_name, drive, supp
                     sensor_node_source_name: 'CMU',
                     sensor_node_ismobile: false,
                     sensor_system: new SensorSystem({
-                        sensors: supportedLookups
-                            .map(({ measurand_parameter, measurand_unit }) => (
+                        sensors: measurands
+                            .map((measurand) => (
                                 new Sensor({
-                                    sensor_id: getSensorId(row.Anon_Name, measurand_parameter),
-                                    measurand_parameter,
-                                    measurand_unit: measurandNormalizer(measurand_unit).unit
+                                    sensor_id: getSensorId(row.Anon_Name, measurand.parameter),
+                                    measurand_parameter: measurand.parameter,
+                                    measurand_unit: measurand.normalized_unit
                                 })
                             ))
                     })
@@ -165,12 +166,12 @@ async function processFile({ file, timestamp, stations, source_name, drive, supp
         }
 
         // Register measurements
-        for (const { input_param, measurand_parameter, measurand_unit } of supportedLookups) {
-            const measure = row[input_param];
+        for (const lookup of measurands) {
+            const measure = row[lookup.input_param];
             if ([undefined, null, 'NaN'].includes(measure)) continue;
             measures.push({
-                sensor_id: getSensorId(sensorNodeId, measurand_parameter),
-                measure: measurandNormalizer(measurand_unit).value(measure),
+                sensor_id: getSensorId(sensorNodeId, lookup.measurand_parameter),
+                measure: lookup.normalize_value(measure),
                 timestamp: timestamp.toISOString()
             });
         }
