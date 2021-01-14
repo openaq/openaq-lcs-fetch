@@ -13,7 +13,7 @@ export class EtlPipeline extends cdk.Stack {
     constructor(
         scope: cdk.Construct,
         id: string,
-        { fetcherModuleDir, schedulerModuleDir, sources, lcsApi, ...props }: StackProps
+        { fetcherModuleDir, schedulerModuleDir, sources, lcsApi, bucketName, ...props }: StackProps
     ) {
         super(scope, id, props);
 
@@ -21,7 +21,7 @@ export class EtlPipeline extends cdk.Stack {
             queueName: `${cdk.Stack.of(this).stackName}-fetch-queue`,
             visibilityTimeout: cdk.Duration.seconds(2880),
         });
-        const bucket = new s3.Bucket(this, "Data");
+        const bucket = s3.Bucket.fromBucketName(this, "Data", bucketName);
 
         this.buildFetcherLambda({ moduleDir: fetcherModuleDir, queue, bucket, lcsApi });
         this.buildSchedulerLambdas({ moduleDir: schedulerModuleDir, queue, sources });
@@ -128,5 +128,6 @@ interface StackProps extends cdk.StackProps {
     fetcherModuleDir: string;
     schedulerModuleDir: string;
     lcsApi: string;
+    bucketName: string;
     sources: Source[];
 }
