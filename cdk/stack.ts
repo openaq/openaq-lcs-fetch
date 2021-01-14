@@ -13,7 +13,7 @@ export class EtlPipeline extends cdk.Stack {
     constructor(
         scope: cdk.Construct,
         id: string,
-        { fetcherModuleDir, schedulerModuleDir, sources, ...props }: StackProps
+        { fetcherModuleDir, schedulerModuleDir, sources, lcsApi, ...props }: StackProps
     ) {
         super(scope, id, props);
 
@@ -23,7 +23,7 @@ export class EtlPipeline extends cdk.Stack {
         });
         const bucket = new s3.Bucket(this, "Data");
 
-        this.buildFetcherLambda({ moduleDir: fetcherModuleDir, queue, bucket });
+        this.buildFetcherLambda({ moduleDir: fetcherModuleDir, queue, bucket, lcsApi });
         this.buildSchedulerLambdas({ moduleDir: schedulerModuleDir, queue, sources });
     }
 
@@ -31,6 +31,7 @@ export class EtlPipeline extends cdk.Stack {
         moduleDir: string;
         queue: sqs.Queue;
         bucket: s3.IBucket;
+        lcsApi: string;
     }): lambda.Function {
         this.prepareNodeModules(props.moduleDir);
         const handler = new lambda.Function(this, "Fetcher", {
@@ -44,7 +45,7 @@ export class EtlPipeline extends cdk.Stack {
                 BUCKET: props.bucket.bucketName,
                 STACK: cdk.Stack.of(this).stackName,
                 VERBOSE: '1',
-                LCS_API: 'https://0jac6b9iac.execute-api.us-east-1.amazonaws.com'
+                LCS_API: props.lcsApi
             },
         });
         handler.addEventSource(
@@ -126,5 +127,6 @@ export class EtlPipeline extends cdk.Stack {
 interface StackProps extends cdk.StackProps {
     fetcherModuleDir: string;
     schedulerModuleDir: string;
+    lcsApi: string;
     sources: Source[];
 }
