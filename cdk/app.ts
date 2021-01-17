@@ -11,7 +11,7 @@ const stack = new EtlPipeline(app, "lcs-etl-pipeline", {
   schedulerModuleDir: "scheduler",
   sources: require('../fetcher/sources'),
   bucketName: process.env.BUCKET || 'openaq-fetches',
-  lcsApi: process.env.LCS_API || 'https://0jac6b9iac.execute-api.us-east-1.amazonaws.com'
+  lcsApi: process.env.LCS_API || 'https://api.openaq.org'
 });
 
 cdk.Tags.of(stack).add('Project', 'lcs')
