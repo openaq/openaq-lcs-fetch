@@ -22,6 +22,17 @@ Tests can be run using the following
 yarn test
 ```
 
+### Env Variables
+
+Configuration for the ingestion is provided via environment variables.
+
+* `BUCKET`: The bucket to which the ingested data should be written. **Required**
+* `SOURCE`: The [data source](#data-sources) to ingest. **Required**
+* `LCS_API`: The API used when fetching supported measurands. _Default: `'https://api.openaq.org'`_
+* `STACK`: The stack to which the ingested data should be associated. This is mainly used to apply a prefix to data uploaded to S3 in order to separate it from production data. _Default: `'local'`_
+* `SECRET_STACK`: The stack to which the used [Secrets](#provider-secrets) are associated. At times, a developer may want to use credentials relating to a different stack (e.g. a devloper is testing the script, they want output data uploaded to the `local` stack but want to use the production stack's secrets). _Default: the value from the `STACK` env variable_
+* `VERBOSE`: Enable verbose logging. _Default: disabled_
+
 ### Running locally
 
 To run the ingestion script locally (useful for testing without deploying), see the following example:
@@ -35,17 +46,6 @@ VERBOSE=1 \
 SOURCE=habitatmap \
 node fetcher/index.js
 ```
-
-### Env Variables
-
-Configuration for the ingestion is provided via environment variables.
-
-* `BUCKET`: The bucket to which the ingested data should be written. **Required**
-* `SOURCE`: The data source to ingest. **Required**
-* `LCS_API`: The API used when fetching supported measurands. _Default: `'https://api.openaq.org'`_
-* `STACK`: The stack to which the ingested data should be associated. This is mainly used to apply a prefix to data uploaded to S3 in order to separate it from production data. _Default: `'local'`_
-* `SECRET_STACK`: The stack to which the used [Secrets](#provider-secrets) are associated. At times, a developer may want to use credentials relating to a different stack (e.g. a devloper is testing the script, they want output data uploaded to the `local` stack but want to use the production stack's secrets). _Default: the value from the `STACK` env variable_
-* `VERBOSE`: Enable verbose logging. _Default: disabled_
 
 ## Data Sources
 
