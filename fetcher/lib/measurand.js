@@ -43,7 +43,7 @@ class Measurand {
         let morePages;
         let page = 1;
         do {
-            const url = new URL('/v2/parameters', process.env.LCS_API);
+            const url = new URL('/v2/parameters', process.env.LCS_API || 'https://api.openaq.org');
             url.searchParams.append('page', page++);
             const { body: { meta, results } } = await request({
                 json: true,
