@@ -33,8 +33,12 @@ class Measurand {
     }
 
     /**
+     * Given a map of lookups from an input parameter (i.e. how a data provider
+     * identifies a measurand) to a tuple of a measurand parameter (i.e. how we
+     * idenify a measurand internally) and a measurand unit, generate an array
+     * Measurand objects that are supported by the OpenAQ API.
      *
-     * @param {*} lookups
+     * @param {*} lookups, e.g. {'CO': ['co', 'ppb'] }
      * @returns { Measurand[] }
      */
     static async getSupportedMeasurands(lookups) {
