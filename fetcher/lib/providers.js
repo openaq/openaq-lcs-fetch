@@ -96,6 +96,8 @@ class Providers {
      * @param {Measures} measures A measurements object of measures
      */
     static async put_measures(provider, measures) {
+        if (!measures.length)
+            return console.warn('No measures found, not uploading to S3.');
         const Bucket = process.env.BUCKET;
         const Key = `${process.env.STACK}/measures/${provider}/${Math.floor(Date.now() / 1000)}.csv.gz`;
         const compressedString = await gzip(measures.csv());

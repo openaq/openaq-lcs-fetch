@@ -23,6 +23,9 @@ async function process_fixed_locations(source_name, source, measurands) {
     const measures = new Measures(FixedMeasure);
 
     const locations = await fixed_locations(source);
+    if (!locations.length) {
+        return console.warn('No fixed locations returned, exiting.');
+    }
     console.log(`ok - pulled ${locations.length} fixed stations`);
 
     for (const location of locations) {
@@ -72,6 +75,9 @@ async function process_mobile_locations(source_name, source, measurands) {
     const measures = new Measures(MobileMeasure);
 
     const locations = await mobile_locations(source);
+    if (!locations.length) {
+        return console.warn('No mobile locations returned, exiting.');
+    }
     console.log(`ok - pulled ${locations.length} mobile stations`);
 
     for (const location of locations) {

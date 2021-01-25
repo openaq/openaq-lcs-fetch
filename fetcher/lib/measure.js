@@ -25,15 +25,13 @@ class Measures {
 
     csv() {
         const csvStringifier = createCsvStringifier({
-            header: this.headers.map((head) => {
-                return {
-                    id: head,
-                    name: head
-                };
-            })
+            header: this.headers.map((head) => ({
+                id: head,
+                title: head
+            }))
         });
 
-        return csvStringifier.getHeaderString() + '\n' + csvStringifier.stringifyRecords(this.measures);
+        return csvStringifier.stringifyRecords(this.measures);
     }
 }
 
