@@ -94,10 +94,12 @@ class Providers {
      *
      * @param {string} provider The name of the provider (ie purpleair)
      * @param {Measures} measures A measurements object of measures
+     * @param {string} id An optional identifier to use when creating filename
      */
-    static async put_measures(provider, measures) {
+    static async put_measures(provider, measures, id) {
         const Bucket = process.env.BUCKET;
-        const Key = `${process.env.STACK}/measures/${provider}/${Math.floor(Date.now() / 1000)}.csv.gz`;
+        const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
+        const Key = `${process.env.STACK}/measures/${provider}/${filename}.csv.gz`;
         const compressedString = await gzip(measures.csv());
         return s3.putObject({
             Bucket,

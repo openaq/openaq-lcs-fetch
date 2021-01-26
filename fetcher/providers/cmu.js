@@ -176,7 +176,8 @@ async function processFile({ file, timestamp, stations, source_name, drive, meas
             });
         }
     }
-    return Providers.put_measures(source_name, measures);
+    const filename = file.name.endsWith('.csv') ? file.name.slice(0, -4) : file.name;
+    return Providers.put_measures(source_name, measures, filename);
 }
 
 class Filename {
