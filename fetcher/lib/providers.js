@@ -97,6 +97,9 @@ class Providers {
      * @param {string} id An optional identifier to use when creating filename
      */
     static async put_measures(provider, measures, id) {
+        if (!measures.length) {
+            return console.warn('No measures found, not uploading to S3.');
+        }
         const Bucket = process.env.BUCKET;
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
         const Key = `${process.env.STACK}/measures/${provider}/${filename}.csv.gz`;
