@@ -166,17 +166,18 @@ async function processFile({ file, timestamp, stations, source_name, drive, meas
         }
 
         // Register measurements
-        for (const lookup of measurands) {
-            const measure = row[lookup.input_param];
+        for (const measurand of measurands) {
+            const measure = row[measurand.input_param];
             if ([undefined, null, 'NaN'].includes(measure)) continue;
             measures.push({
-                sensor_id: getSensorId(sensorNodeId, lookup.measurand_parameter),
-                measure: lookup.normalize_value(measure),
+                sensor_id: getSensorId(sensorNodeId, measurand.parameter),
+                measure: measurand.normalize_value(measure),
                 timestamp: timestamp.toISOString()
             });
         }
     }
-    return Providers.put_measures(source_name, measures);
+    const filename = file.name.endsWith('.csv') ? file.name.slice(0, -4) : file.name;
+    return Providers.put_measures(source_name, measures, filename);
 }
 
 class Filename {
