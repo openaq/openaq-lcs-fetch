@@ -33,8 +33,12 @@ class Measurand {
     }
 
     /**
+     * Given a map of lookups from an input parameter (i.e. how a data provider
+     * identifies a measurand) to a tuple of a measurand parameter (i.e. how we
+     * idenify a measurand internally) and a measurand unit, generate an array
+     * Measurand objects that are supported by the OpenAQ API.
      *
-     * @param {*} lookups
+     * @param {*} lookups, e.g. {'CO': ['co', 'ppb'] }
      * @returns { Measurand[] }
      */
     static async getSupportedMeasurands(lookups) {
@@ -43,7 +47,7 @@ class Measurand {
         let morePages;
         let page = 1;
         do {
-            const url = new URL('/v2/parameters', process.env.LCS_API);
+            const url = new URL('/v2/parameters', process.env.LCS_API || 'https://api.openaq.org');
             url.searchParams.append('page', page++);
             const { body: { meta, results } } = await request({
                 json: true,

@@ -22,6 +22,31 @@ Tests can be run using the following
 yarn test
 ```
 
+### Env Variables
+
+Configuration for the ingestion is provided via environment variables.
+
+* `BUCKET`: The bucket to which the ingested data should be written. **Required**
+* `SOURCE`: The [data source](#data-sources) to ingest. **Required**
+* `LCS_API`: The API used when fetching supported measurands. _Default: `'https://api.openaq.org'`_
+* `STACK`: The stack to which the ingested data should be associated. This is mainly used to apply a prefix to data uploaded to S3 in order to separate it from production data. _Default: `'local'`_
+* `SECRET_STACK`: The stack to which the used [Secrets](#provider-secrets) are associated. At times, a developer may want to use credentials relating to a different stack (e.g. a devloper is testing the script, they want output data uploaded to the `local` stack but want to use the production stack's secrets). _Default: the value from the `STACK` env variable_
+* `VERBOSE`: Enable verbose logging. _Default: disabled_
+
+### Running locally
+
+To run the ingestion script locally (useful for testing without deploying), see the following example:
+
+```sh
+LCS_API=https://api.openaq.org \
+STACK=my-dev-stack \
+SECRET_STACK=my-prod-stack \
+BUCKET=openaq-fetches \
+VERBOSE=1 \
+SOURCE=habitatmap \
+node fetcher/index.js
+```
+
 ## Data Sources
 
 Data Sources can be configured by adding a config file & corresponding provider script. The two sections below
@@ -29,7 +54,7 @@ outline what is necessary to create and a new source.
 
 ### Source Config
 
-The first step for a new source is to add an entry to the array located in the `lib/sources.js` directory.
+The first step for a new source is to add JSON config file to the the `fetcher/lib/sources` directory.
 
 
 ```json
@@ -54,7 +79,7 @@ provider script. The above table however outlines the attributes that are requir
 
 ### Provider Script
 
-The second step is to add a new provider script to the `lib/providers/` directory.
+The second step is to add a new provider script to the `fetcher/lib/providers` directory.
 
 The script here should expose a function named `processor` and should pass
 `SensorSystem` & `Measures` objects to the `Providers` class.
@@ -76,22 +101,22 @@ async function processor(source_name, source) {
 
     await Providers.put_stations(source_name, [ station ]);
 
-    const fmeasures = new Measures(FixedMeasure);
+    const fixed_measures = new Measures(FixedMeasure);
     // or
-    const mmeasures = new Measures(MobileMeasure);
+    const mobile_measures = new Measures(MobileMeasure);
 
-    fmeasures.push(new FixedMeasure({
+    fixed_measures.push(new FixedMeasure({
         sensor_id: 'PurpleAir-123',
         measure: 123,
         timestamp: Math.floor(new Date() / 1000) //UNIX Timestamp
     }));
 
-    await Providers.put_measures(source_name, fmeasures);
+    await Providers.put_measures(source_name, fixed_measures);
 }
 
 module.exports = { processor };
 ```
 
-### Secrets
+### Provider Secrets
 
 For data providers that require credentials, credentials should be store on AWS Secrets Manager with an ID composed of the stack name and provider name, such as `:stackName/:providerName`.
