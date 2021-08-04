@@ -1,8 +1,0 @@
-{
-    "schema": "v1",
-    "provider": "airkatz",
-    "frequency": "hour",
-    "meta": {
-        "url": "https://airkaz.org/api/v0.1/?type=IQair&token=oBZAolofFdvhgjbduFaY"
-    }
-}
