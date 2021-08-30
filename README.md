@@ -54,7 +54,7 @@ outline what is necessary to create and a new source.
 
 ### Source Config
 
-The first step for a new source is to add JSON config file to the the `fetcher/lib/sources` directory.
+The first step for a new source is to add JSON config file to the the `fetcher/sources` directory.
 
 
 ```json
@@ -79,9 +79,9 @@ provider script. The above table however outlines the attributes that are requir
 
 ### Provider Script
 
-The second step is to add a new provider script to the `fetcher/lib/providers` directory.
+The second step is to add a new provider script to the `fetcher/providers` directory.
 
-The script here should expose a function named `processor` and should pass
+The script here should expose a function named `processor`. This function should pass
 `SensorSystem` & `Measures` objects to the `Providers` class.
 
 The script below is a basic example of a new source:
