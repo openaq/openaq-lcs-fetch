@@ -28,8 +28,24 @@ async function fetchSecret(source_name) {
     return JSON.parse(SecretString);
 }
 
+/**
+ * Transform phrase to camel case.
+ * e.g. toCamelCase("API Key") === "apiKey"
+ * 
+ * @param {string} phrase 
+ * @returns {string}
+ */
+function toCamelCase(phrase) {
+    return phrase
+        .split(' ')
+        .map(word => word.toLowerCase())
+        .map((word, i) => i === 0 ? word : word.replace(/^./, word[0].toUpperCase()))
+        .join('')
+}
+
 module.exports = {
     fetchSecret,
     request,
+    toCamelCase,
     VERBOSE
 };
