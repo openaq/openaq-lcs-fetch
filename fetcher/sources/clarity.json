@@ -3,7 +3,7 @@
   "provider": "clarity",
   "frequency": "hour",
   "meta": {
-    "url": "https://clarity-data-api.clarity.io/v1/",
+    "url": "https://clarity-data-api.clarity.io",
     "spreadsheetId": "1Lmw5sBoaDFzf8Qxcc-j96VtKjl_6CsLVv0LpGBtzfKA"
   }
 }
