@@ -1,4 +1,4 @@
-const { request, VERBOSE } = require('./utils');
+const { request, VERBOSE } = require("./utils");
 
 class Measurand {
     constructor({ input_param, parameter, unit }) {
@@ -17,11 +17,13 @@ class Measurand {
      * @returns { Object } normalizer
      */
     get _normalizer() {
-        return {
-            ppb: ['ppm', (val) => (val / 1000)],
-            'ng/m³': ['µg/m³', (val) => (val / 1000)],
-            'pp100ml': ['particles/cm³', (val) => (val / 100)]
-        }[this.unit] || [this.unit, (val) => val];
+        return (
+            {
+                ppb: ["ppm", (val) => val / 1000],
+                "ng/m³": ["µg/m³", (val) => val / 1000],
+                pp100ml: ["particles/cm³", (val) => val / 100],
+            }[this.unit] || [this.unit, (val) => val]
+        );
     }
 
     get normalized_unit() {
@@ -35,7 +37,7 @@ class Measurand {
     /**
      * Given a map of lookups from an input parameter (i.e. how a data provider
      * identifies a measurand) to a tuple of a measurand parameter (i.e. how we
-     * idenify a measurand internally) and a measurand unit, generate an array
+     * identify a measurand internally) and a measurand unit, generate an array
      * Measurand objects that are supported by the OpenAQ API.
      *
      * @param {*} lookups, e.g. {'CO': ['co', 'ppb'] }
@@ -47,36 +49,69 @@ class Measurand {
         let morePages;
         let page = 1;
         do {
-            const url = new URL('/v2/parameters', process.env.LCS_API || 'https://api.openaq.org');
-            url.searchParams.append('page', page++);
-            const { body: { meta, results } } = await request({
+            const url = new URL(
+                "/v2/parameters",
+                process.env.LCS_API || "https://api.openaq.org"
+            );
+            url.searchParams.append("page", page++);
+            const {
+                body: { meta, results },
+            } = await request({
                 json: true,
-                method: 'GET',
-                url
+                method: "GET",
+                url,
             });
             for (const { name } of results) {
                 supportedMeasurandParameters.push(name);
             }
             morePages = meta.found > meta.page * meta.limit;
         } while (morePages);
-        if (VERBOSE) console.debug(`Fetched ${supportedMeasurandParameters.length} supported measurement parameters.`);
+        if (VERBOSE)
+            console.debug(
+                `Fetched ${supportedMeasurandParameters.length} supported measurement parameters.`
+            );
 
         // Filter provided lookups
         const supportedLookups = Object.entries(lookups).filter(
             // eslint-disable-next-line no-unused-vars
-            ([input_param, [measurand_parameter, measurand_unit]]) => supportedMeasurandParameters.includes(measurand_parameter)
+            ([input_param, [measurand_parameter, measurand_unit]]) =>
+                supportedMeasurandParameters.includes(measurand_parameter)
         );
-        if (!supportedLookups.length) throw new Error('No measurands supported.');
+        if (!supportedLookups.length) throw new Error("No measurands supported.");
         if (VERBOSE) {
             Object.values(lookups)
                 .map(([measurand_parameter]) => measurand_parameter)
-                .filter((measurand_parameter) => !supportedMeasurandParameters.includes(measurand_parameter))
-                .map((measurand_parameter) => console.debug(`warning - ignoring unsupported parameters: ${measurand_parameter}`));
+                .filter(
+                    (measurand_parameter) =>
+                        !supportedMeasurandParameters.includes(measurand_parameter)
+                )
+                .map((measurand_parameter) =>
+                    console.debug(
+                        `warning - ignoring unsupported parameters: ${measurand_parameter}`
+                    )
+                );
         }
         return supportedLookups.map(
-            ([input_param, [parameter, unit]]) => (
+            ([input_param, [parameter, unit]]) =>
                 new Measurand({ input_param, parameter, unit })
-            )
+        );
+    }
+
+    /**
+     * Given a map of lookups from an input parameter (i.e. how a data provider
+     * identifies a measurand) to a tuple of a measurand parameter (i.e. how we
+     * identify a measurand internally) and a measurand unit, generate an object
+     * of Measurand objects that are supported by the OpenAQ API, indexed by their
+     * input parameter.
+     *
+     * @param {*} lookups  e.g. {'CO': ['co', 'ppb'] }
+     * @returns
+     */
+    static async getIndexedSupportedMeasurands(lookups) {
+        const measurands = await Measurand.getSupportedMeasurands(lookups);
+        return Object.assign(
+            {},
+            ...measurands.map((measurand) => ({ [measurand.input_param]: measurand }))
         );
     }
 }
