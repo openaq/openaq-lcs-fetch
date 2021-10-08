@@ -62,12 +62,20 @@ async function listOrganizations(spreadsheetId, credentials) {
 class ClarityApi {
     /**
      *
-     * @param {String} baseUrl
+     * @param {Source} source
      * @param {Organization} org
      */
-    constructor(baseUrl, org) {
-        this.baseUrl = baseUrl;
+    constructor(source, org) {
+        this.source = source;
         this.org = org;
+    }
+
+    get apiKey() {
+        return this.org.apiKey;
+    }
+
+    get baseUrl() {
+        return this.source.meta.url;
     }
 
     /**
@@ -81,7 +89,7 @@ class ClarityApi {
         return request({
             json: true,
             method: "GET",
-            headers: { "X-API-Key": this.org.apiKey },
+            headers: { "X-API-Key": this.apiKey },
             url: new URL("v1/datasources", this.baseUrl),
         }).then((response) => response.body);
     }
@@ -97,7 +105,7 @@ class ClarityApi {
         return request({
             json: true,
             method: "GET",
-            headers: { "X-API-Key": this.org.apiKey },
+            headers: { "X-API-Key": this.apiKey },
             url: new URL("v1/devices", this.baseUrl),
         }).then((response) => response.body);
     }
@@ -154,7 +162,7 @@ class ClarityApi {
                 url,
                 json: true,
                 method: "GET",
-                headers: { "X-API-Key": this.org.apiKey },
+                headers: { "X-API-Key": this.apiKey },
                 gzip: true,
             });
 
@@ -188,10 +196,10 @@ class ClarityApi {
         // Create one station per device
         const stations = devices.map((device) =>
             Providers.put_station(
-                this.org.organizationName,
+                this.source.provider,
                 new SensorNode({
                     sensor_node_id: `${this.org.organizationName}-${device.code}`,
-                    sensor_node_site_name: "clarity",
+                    sensor_node_site_name: this.source.provider,
                     sensor_node_geometry: device.location.coordinates,
                     sensor_node_source_name: "Clarity",
                     sensor_node_ismobile: false,
@@ -239,7 +247,7 @@ class ClarityApi {
 
         await Promise.all([
             ...stations,
-            Providers.put_measures(this.org.organizationName, measures),
+            Providers.put_measures(this.source.provider, measures),
         ]);
     }
 }
@@ -265,9 +273,7 @@ module.exports = {
 
         return Promise.all(
             orgs.map((org) =>
-                limit(() =>
-                    new ClarityApi(source.meta.url, org).sync(measurandsIndex, now)
-                )
+                limit(() => new ClarityApi(source, org).sync(measurandsIndex, now))
             )
         );
     },
