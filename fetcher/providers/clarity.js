@@ -43,9 +43,7 @@ async function listOrganizations(spreadsheetId, credentials) {
     });
     const res = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        // We use a named range for the Org Name & API Key
-        // https://support.google.com/docs/answer/63175
-        range: "Credentials",
+        range: "'Form Responses'!A:B",
     });
 
     const rows = res.data.values;
