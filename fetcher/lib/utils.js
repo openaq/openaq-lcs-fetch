@@ -1,7 +1,7 @@
-const zlib = require("zlib");
-const { promisify } = require("util");
-const request = promisify(require("request"));
-const AWS = require("aws-sdk");
+const zlib = require('zlib');
+const { promisify } = require('util');
+const request = promisify(require('request'));
+const AWS = require('aws-sdk');
 
 const VERBOSE = !!process.env.VERBOSE;
 
@@ -12,25 +12,25 @@ const VERBOSE = !!process.env.VERBOSE;
  * @returns {object}
  */
 async function fetchSecret(source_name) {
-  const secretsManager = new AWS.SecretsManager({
-    region: process.env.AWS_DEFAULT_REGION || "us-east-1",
-  });
+    const secretsManager = new AWS.SecretsManager({
+        region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
+    });
 
-  if (!process.env.STACK) throw new Error("STACK Env Var Required");
+    if (!process.env.STACK) throw new Error('STACK Env Var Required');
 
-  const SecretId = `${
-    process.env.SECRET_STACK || process.env.STACK
-  }/${source_name}`;
+    const SecretId = `${
+        process.env.SECRET_STACK || process.env.STACK
+    }/${source_name}`;
 
-  if (VERBOSE) console.debug(`Fetching ${SecretId}...`);
+    if (VERBOSE) console.debug(`Fetching ${SecretId}...`);
 
-  const { SecretString } = await secretsManager
-    .getSecretValue({
-      SecretId,
-    })
-    .promise();
+    const { SecretString } = await secretsManager
+        .getSecretValue({
+            SecretId
+        })
+        .promise();
 
-  return JSON.parse(SecretString);
+    return JSON.parse(SecretString);
 }
 
 /**
@@ -41,23 +41,24 @@ async function fetchSecret(source_name) {
  * @returns {string}
  */
 function toCamelCase(phrase) {
-  return phrase
-    .split(" ")
-    .map((word) => word.toLowerCase())
-    .map((word, i) =>
-      i === 0 ? word : word.replace(/^./, word[0].toUpperCase())
-    )
-    .join("");
+    return phrase
+        .split(' ')
+        .map((word) => word.toLowerCase())
+        .map((word, i) => {
+            if (i === 0) return word;
+            return word.replace(/^./, word[0].toUpperCase());
+        })
+        .join('');
 }
 
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 
 module.exports = {
-  fetchSecret,
-  request,
-  toCamelCase,
-  gzip,
-  unzip,
-  VERBOSE,
+    fetchSecret,
+    request,
+    toCamelCase,
+    gzip,
+    unzip,
+    VERBOSE
 };

@@ -1,4 +1,4 @@
-const { request, VERBOSE } = require("./utils");
+const { request, VERBOSE } = require('./utils');
 
 class Measurand {
     constructor({ input_param, parameter, unit }) {
@@ -19,9 +19,9 @@ class Measurand {
     get _normalizer() {
         return (
             {
-                ppb: ["ppm", (val) => val / 1000],
-                "ng/m³": ["µg/m³", (val) => val / 1000],
-                pp100ml: ["particles/cm³", (val) => val / 100],
+                ppb: ['ppm', (val) => val / 1000],
+                'ng/m³': ['µg/m³', (val) => val / 1000],
+                pp100ml: ['particles/cm³', (val) => val / 100]
             }[this.unit] || [this.unit, (val) => val]
         );
     }
@@ -50,16 +50,16 @@ class Measurand {
         let page = 1;
         do {
             const url = new URL(
-                "/v2/parameters",
-                process.env.LCS_API || "https://api.openaq.org"
+                '/v2/parameters',
+                process.env.LCS_API || 'https://api.openaq.org'
             );
-            url.searchParams.append("page", page++);
+            url.searchParams.append('page', page++);
             const {
-                body: { meta, results },
+                body: { meta, results }
             } = await request({
                 json: true,
-                method: "GET",
-                url,
+                method: 'GET',
+                url
             });
             for (const { name } of results) {
                 supportedMeasurandParameters.push(name);
@@ -77,7 +77,7 @@ class Measurand {
             ([input_param, [measurand_parameter, measurand_unit]]) =>
                 supportedMeasurandParameters.includes(measurand_parameter)
         );
-        if (!supportedLookups.length) throw new Error("No measurands supported.");
+        if (!supportedLookups.length) throw new Error('No measurands supported.');
         if (VERBOSE) {
             Object.values(lookups)
                 .map(([measurand_parameter]) => measurand_parameter)
@@ -105,7 +105,7 @@ class Measurand {
      * input parameter.
      *
      * @param {*} lookups  e.g. {'CO': ['co', 'ppb'] }
-     * @returns
+     * @returns {object}
      */
     static async getIndexedSupportedMeasurands(lookups) {
         const measurands = await Measurand.getSupportedMeasurands(lookups);

@@ -4,26 +4,25 @@
  *     with the Google OAuth Service Account. https://stackoverflow.com/a/49965912/728583
  */
 
-const { google } = require("googleapis");
-const dayjs = require("dayjs");
-const pLimit = require("p-limit");
+const { google } = require('googleapis');
+const dayjs = require('dayjs');
+const pLimit = require('p-limit');
 
-const Providers = require("../lib/providers");
-const { fetchSecret, VERBOSE, toCamelCase, request } = require("../lib/utils");
-const { Sensor, SensorNode, SensorSystem } = require("../lib/station");
-const { Measures, FixedMeasure } = require("../lib/measure");
-const { Measurand } = require("../lib/measurand");
-const { Dayjs } = require("dayjs");
+const Providers = require('../lib/providers');
+const { fetchSecret, VERBOSE, toCamelCase, request } = require('../lib/utils');
+const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
+const { Measures, FixedMeasure } = require('../lib/measure');
+const { Measurand } = require('../lib/measurand');
 
 const lookup = {
-    relHumid: ["relativehumidity", "%"], // RelativeHumidity
-    temperature: ["temperature", "c"], // Temperature
-    pm2_5ConcMass: ["pm25", "μg/m3"], //	PM2.5 mass concentration
-    pm1ConcMass: ["pm1", "μg/m3"], //	PM1 mass concentration
-    pm10ConcMass: ["pm10", "μg/m3"], //	PM10 mass concentration
-    no2Conc: ["no2", "ppb"], // NO2 volume concentration
-    windSpeed: ["windspeed", "m/s"], //	Wind speed
-    windDirection: ["winddirection", "degrees"], //	Wind direction, compass degrees (0°=North, then clockwise)
+    relHumid: ['relativehumidity', '%'], // RelativeHumidity
+    temperature: ['temperature', 'c'], // Temperature
+    pm2_5ConcMass: ['pm25', 'μg/m3'], //	PM2.5 mass concentration
+    pm1ConcMass: ['pm1', 'μg/m3'], //	PM1 mass concentration
+    pm10ConcMass: ['pm10', 'μg/m3'], //	PM10 mass concentration
+    no2Conc: ['no2', 'ppb'], // NO2 volume concentration
+    windSpeed: ['windspeed', 'm/s'], //	Wind speed
+    windDirection: ['winddirection', 'degrees'] //	Wind direction, compass degrees (0°=North, then clockwise)
 };
 
 /**
@@ -35,15 +34,15 @@ const lookup = {
 async function listOrganizations(spreadsheetId, credentials) {
     if (VERBOSE) console.debug(`Fetching Google sheet ${spreadsheetId}...`);
     const sheets = google.sheets({
-        version: "v4",
+        version: 'v4',
         auth: new google.auth.GoogleAuth({
             credentials,
-            scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-        }),
+            scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
+        })
     });
     const res = await sheets.spreadsheets.values.get({
         spreadsheetId,
-        range: "'Form Responses'!A:B",
+        range: "'Form Responses'!A:B"
     });
 
     const rows = res.data.values;
@@ -86,9 +85,9 @@ class ClarityApi {
 
         return request({
             json: true,
-            method: "GET",
-            headers: { "X-API-Key": this.apiKey },
-            url: new URL("v1/datasources", this.baseUrl),
+            method: 'GET',
+            headers: { 'X-API-Key': this.apiKey },
+            url: new URL('v1/datasources', this.baseUrl)
         }).then((response) => response.body);
     }
 
@@ -102,9 +101,9 @@ class ClarityApi {
 
         return request({
             json: true,
-            method: "GET",
-            headers: { "X-API-Key": this.apiKey },
-            url: new URL("v1/devices", this.baseUrl),
+            method: 'GET',
+            headers: { 'X-API-Key': this.apiKey },
+            url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body);
     }
 
@@ -115,19 +114,19 @@ class ClarityApi {
     async listAugmentedDevices() {
         const [devices, datasources] = await Promise.all([
             this.listDevices(),
-            this.listDatasources(),
+            this.listDatasources()
         ]);
 
         const indexedDatasources = Object.assign(
             {},
             ...datasources.map((datasource) => ({
-                [datasource.deviceCode]: datasource,
+                [datasource.deviceCode]: datasource
             }))
         );
 
         return devices.map((device) => ({
             ...indexedDatasources[device.code],
-            ...device,
+            ...device
         }));
     }
 
@@ -147,21 +146,21 @@ class ClarityApi {
         const limit = 20000;
         let offset = 0;
 
-        const url = new URL("v1/measurements", this.baseUrl);
-        url.searchParams.set("code", code);
-        url.searchParams.set("limit", limit);
-        url.searchParams.set("startTime", since.toISOString());
-        url.searchParams.set("endTime", to.toISOString());
+        const url = new URL('v1/measurements', this.baseUrl);
+        url.searchParams.set('code', code);
+        url.searchParams.set('limit', limit);
+        url.searchParams.set('startTime', since.toISOString());
+        url.searchParams.set('endTime', to.toISOString());
 
         while (true) {
-            url.searchParams.set("skip", offset);
+            url.searchParams.set('skip', offset);
             console.log(`Fetching ${url}`);
             const response = await request({
                 url,
                 json: true,
-                method: "GET",
-                headers: { "X-API-Key": this.apiKey },
-                gzip: true,
+                method: 'GET',
+                headers: { 'X-API-Key': this.apiKey },
+                gzip: true
             });
 
             for (const measurement of response.body) {
@@ -199,7 +198,7 @@ class ClarityApi {
                     sensor_node_id: `${this.org.organizationName}-${device.code}`,
                     sensor_node_site_name: this.source.provider,
                     sensor_node_geometry: device.location.coordinates,
-                    sensor_node_source_name: "Clarity",
+                    sensor_node_source_name: 'Clarity',
                     sensor_node_ismobile: false,
                     sensor_node_deployed_date: device.workingStartAt,
                     sensor_system: new SensorSystem({
@@ -212,10 +211,10 @@ class ClarityApi {
                                     new Sensor({
                                         sensor_id: getSensorId(device, measurand),
                                         measurand_parameter: measurand.parameter,
-                                        measurand_unit: measurand.normalized_unit,
+                                        measurand_unit: measurand.normalized_unit
                                     })
-                            ),
-                    }),
+                            )
+                    })
                 })
             )
         );
@@ -225,7 +224,7 @@ class ClarityApi {
         for (const device of devices) {
             const measurements = this.fetchMeasurements(
                 device.code,
-                since.subtract(1.25, "hour"),
+                since.subtract(1.25, 'hour'),
                 since
             );
 
@@ -237,7 +236,7 @@ class ClarityApi {
                     measures.push({
                         sensor_id: getSensorId(device, measurand),
                         measure: measurand.normalize_value(value),
-                        timestamp: measurement.time,
+                        timestamp: measurement.time
                     });
                 }
             }
@@ -245,7 +244,7 @@ class ClarityApi {
 
         await Promise.all([
             ...stations,
-            Providers.put_measures(this.source.provider, measures),
+            Providers.put_measures(this.source.provider, measures)
         ]);
     }
 }
@@ -258,7 +257,7 @@ module.exports = {
     async processor(source_name, source) {
         const [credentials, measurandsIndex] = await Promise.all([
             fetchSecret(source_name),
-            Measurand.getIndexedSupportedMeasurands(lookup),
+            Measurand.getIndexedSupportedMeasurands(lookup)
         ]);
 
         const orgs = await listOrganizations(
@@ -274,7 +273,7 @@ module.exports = {
                 limit(() => new ClarityApi(source, org).sync(measurandsIndex, now))
             )
         );
-    },
+    }
 };
 
 /**
