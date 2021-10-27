@@ -103,6 +103,24 @@ class SensorSystem {
     }
 }
 
+class Version {
+  constructor(p = {}) {
+    this.version_id = null;
+    this.sensor_id = null;
+    this.life_cycle_id = null;
+    this.read = null;
+    Object.assign(this, p);
+  }
+  json() {
+    return stripNulls({
+      version_id: this.version_id,
+      sensor_id: this.sensor_id,
+      life_cycle_id: this.life_cycle_id,
+      readme: this.readme,
+    });
+  }
+}
+
 class Sensor {
     constructor(p = {}) {
         this.sensor_id = null;
@@ -136,6 +154,7 @@ class Sensor {
 
         Object.assign(this, p);
     }
+
 
     json() {
         return stripNulls({
@@ -182,7 +201,8 @@ function stripNulls(obj) {
 }
 
 module.exports = {
-    Sensor,
-    SensorNode,
-    SensorSystem
+  Sensor,
+  Version,
+  SensorNode,
+  SensorSystem
 };

@@ -28,8 +28,39 @@ async function fetchSecret(source_name) {
     return JSON.parse(SecretString);
 }
 
+/**
+ * Method to return a standardized date string
+ *
+ * @returns {string}
+ */
+function currentDateString() {
+  const dt = new Date();
+  const month = ("0" + dt.getMonth()).slice(-2);
+  const day = ("0" + dt.getDate() + 1).slice(-2);
+  const year = dt.getFullYear();
+  return `${year}${month}${day}`;
+}
+
+/**
+ * Method to return a standardized datetime string.
+ *
+ * @returns {string}
+ */
+function currentDatetimeString() {
+  const dt = new Date();
+  const month = ("0" + dt.getMonth()).slice(-2);
+  const day = ("0" + dt.getDate() + 1).slice(-2);
+  const year = dt.getFullYear();
+  const hours = dt.getHours();
+  const minutes = dt.getMinutes();
+  const seconds = dt.getSeconds();
+  return `${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
 module.exports = {
     fetchSecret,
     request,
-    VERBOSE
+    currentDateString,
+    currentDatetimeString,
+    VERBOSE,
 };
