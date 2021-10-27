@@ -196,12 +196,13 @@ class ClarityApi {
                 this.source.provider,
                 new SensorNode({
                     sensor_node_id: `${this.org.organizationName}-${device.code}`,
-                    sensor_node_site_name: this.source.provider,
+                    sensor_node_site_name: device.name,
                     sensor_node_geometry: device.location.coordinates,
-                    sensor_node_source_name: 'Clarity',
+                    sensor_node_source_name: this.org.organizationName,
                     sensor_node_ismobile: false,
                     sensor_node_deployed_date: device.workingStartAt,
                     sensor_system: new SensorSystem({
+                        sensor_system_manufacturer_name: this.source.provider,
                         //   Create one sensor per characteristic
                         sensors: device.enabledCharacteristics
                             .map((characteristic) => supportedMeasurands[characteristic])
