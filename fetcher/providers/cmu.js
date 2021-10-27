@@ -352,4 +352,3 @@ module.exports = {
     processor,
     getMonthQuery
 };
-
