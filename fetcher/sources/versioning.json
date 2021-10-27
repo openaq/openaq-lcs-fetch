@@ -1,0 +1,18 @@
+{
+  "schema": "v1",
+  "provider": "versioning",
+  "meta": {
+    "directory": "../data/cmu",
+    "parameters": {
+      "co": ["co", "ppb"],
+      "no": ["no", "ppb"],
+      "no2": ["no2", "ppb"],
+      "o3": ["o3", "ppb"],
+      "p": ["pressure", "hpa"],
+      "pm025": ["pm25", "μg/m³"],
+      "rh": ["relativehumidity", "%"],
+      "so2": ["so2", "ppb"],
+      "temp": ["temperature", "c"]
+    }
+  }
+}
