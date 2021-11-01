@@ -1,3 +1,19 @@
+/**
+ * @fileOverview Adapter to process files within the versioning work flow.
+ * This workflow is slightly different from the LCS workflow in that it allows (expects)
+ * different file types (measurement, location and version). One of the challenges here is to
+ * make sure that data from one file is not overwritten by data from a subsequent file.
+ * For example, a measurement file is expected to provide the relationships between the
+ * node, system and sensor information, but a location file would provide details about the
+ * station but with no sensor information.
+ * Methods in this script should save processed files in the following format
+ * Locations: {source}-{location}.json.gz
+ * Measurements: {filename}.gz
+ * Versions: {source}-{parentSensorId}-{version}.json.gz
+ * @name versioning.js
+ * @author Christian Parker <chris@talloaks.io>
+ * @license no license
+ */
 const csv = require('csv-parser');
 const pLimit = require('p-limit');
 const Providers = require('../lib/providers');
@@ -8,6 +24,7 @@ const fs = require('fs');
 const readdir = promisify(fs.readdir);
 const gzip = promisify(zlib.gzip);
 const { currentDateString } = require('../lib/utils');
+const AWS = require('aws-sdk');
 //const unzip = promisify(zlib.unzip);
 
 const {
@@ -37,6 +54,19 @@ const {
 
 
 /**
+ * Retrieve secret from AWS Secrets Manager
+ * If we are working locally this will look to env for the values
+ * @param {string} source_name The source for which we are fetching a secret.
+ *
+ * @returns {object}
+ */
+async function fetchSecret(source_name) {
+  console.log('fetch secret', source_name);
+    //return JSON.parse(SecretString);
+}
+
+
+/**
  * Add the station data to the local directory. Just for testing purposes
  *
  * @param {string} provider
@@ -44,10 +74,9 @@ const {
  *
  * @returns {string}
  */
-const put_station = async (provider, station) => {
+const put_station = async (sourceId, station) => {
   // simply write the staion to a local folder
-
-  const providerStation = `${provider}-${station.sensor_node_id}.json.gz`;
+  const providerStation = `${sourceId}-${station.sensor_node_id}.json.gz`;
   const filePath = path.join(__dirname, '../data/cmu/stations', providerStation);
   const compressedString = await gzip(JSON.stringify(station.json()));
   await fs.promises.writeFile(filePath, compressedString);
@@ -70,9 +99,6 @@ const put_measures = async (provider, measures, id) => {
   const filename = `${id}.csv.gz`;
   const filePath = path.join(__dirname, '../data/cmu/measurements', filename);
   const compressedString = await gzip(measures.csv());
-  if(VERBOSE) {
-    console.log('Adding measurements to local directory', id, filename);
-  }
   await fs.promises.writeFile(filePath, compressedString);
   return(filePath);
 };
@@ -86,13 +112,10 @@ const put_measures = async (provider, measures, id) => {
  *
  * @returns {string}
  */
-const put_version = async (location, parameter, lifecycle, isNew) => {
-  const filename = `${id}.csv.gz`;
-  const filePath = path.join(__dirname, '../data/cmu/measurements', filename);
-  const compressedString = await gzip(measures.csv());
-  if(VERBOSE) {
-    console.log('Adding measurements to local directory', id, filename);
-  }
+const put_version = async (version) => {
+  const filename = `${version.sensor_id}.json.gz`;
+  const filePath = path.join(__dirname, '../data/cmu/versions', filename);
+  const compressedString = await gzip(JSON.stringify(version.json()));
   await fs.promises.writeFile(filePath, compressedString);
   return(filePath);
 };
@@ -136,7 +159,11 @@ function getSensorId(sourceId, sensorNodeId, measurandParameter, lifeCycle, isVe
 }
 
 /**
- * Fetch and then process files for ingest
+ * Fetch files from the clients staging area and process them.
+ * We are supporting 3 types of files for this adapter
+ * A measurement file which follows the traditional format
+ * A location file which provides metadata for the location/station
+ * and a version file which allows for a readme to be added.
  *
  * @param {string} source_name - The name used for the source
  * @param {object} source - An object that also includes the source name?
@@ -147,16 +174,20 @@ async function processor(source_name, source) {
 
   const { directory, parameters } = source.meta;
   const limit = pLimit(10);
-  const directoryPath = path.join(__dirname, directory, 'staging');
+  const directoryPath = path.join(__dirname, directory, 'staging/pending');
   const filesToProcess = [];
-  const stations = {};
+  // passing a stations object does not make sense when we have different file types
+  // the concern is that a measurement file could create a station and then a new
+  // location file would come along and the file would be ignored. If this is needed
+  // we could add it back and come up with another way around this issue.
+  // const stations = {};
 
   const [
     measurands,
     //credentials
   ] = await Promise.all([
     Measurand.getSupportedMeasurands(parameters),
-    //fetchSecret(source.provider)
+    fetchSecret(source.provider)
   ]);
 
   // First we need to get the list of files to process
@@ -171,15 +202,18 @@ async function processor(source_name, source) {
       name: filename,
       path: filepath,
     };
-    return new Promise((resolve, reject) => {
+    if(VERBOSE) console.log('processing file', filename);
+   return new Promise((resolve, reject) => {
       fs.createReadStream(filepath)
         .pipe(csv())
         .on('data', row => data.push(row))
         .on('end', () => {
           // trying to remain consistent with other providers
           // so we are using the limit method
+          // also, we are going to pass all files to the same process method
+          // and let that method sort out which file it is.
           filesToProcess.push(
-            limit(() => process({ file, data, stations, measurands }))
+            limit(() => process({ file, data, measurands }))
           );
           resolve();
         });
@@ -187,8 +221,8 @@ async function processor(source_name, source) {
   }));
 
   // what is the point of this?
-  await Promise.all(Object.values(stations));
-  console.log(`ok - all ${Object.values(stations).length} fixed stations pushed`);
+  //await Promise.all(Object.values(stations));
+  //console.log(`ok - all ${Object.values(stations).length} fixed stations pushed`);
 
   await Promise.all(filesToProcess);
   console.log(`ok - all ${filesToProcess.length} files processed`);
@@ -196,27 +230,31 @@ async function processor(source_name, source) {
 }
 
 /**
- * Return a query for years and months (represented as a string, formatted as
-    such: 'YYYY-MM') that occurred between two times, inclusive
+ *
  *
  * @param {object} file - file information to use for saving the final csv file
- * @param {array} data - the data, in wide format, to be processed
+ * @param {array} data - the data, in client format, to be processed/normalized
  * @param {object} stations - an empty object to store station data (??)
  * @param {Measurands} measurands - list of the proper measurand names
  *
  * @returns {??}
  */
-async function process({ file, data, stations, measurands }) {
+async function process({ file, data, measurands }) {
 
   const measures = new Measures(FixedMeasure);
   const sourceId = 'versioning';
+  const versions = {};
+  const stations = {};
 
+  // even though we are supporting 3 file types we want to make sure that
+  // we do not require a seperate version and location file if its not needed.
   for(const row of data) {
     let sensorNodeId = row.location;
     let { lifecycle, version } = row;
     // Compile the station information and check if it exists
     // If not this will add the sensor node to the stations directory
-    // this will trigger an injest of the station data
+    // if it does exist then it will compare the json strings and possibly update.
+    // Either a new file or an update will trigger an injest of the station data
     if(!stations[sensorNodeId]) {
       stations[sensorNodeId] = put_station(
         sourceId,
@@ -239,27 +277,50 @@ async function process({ file, data, stations, measurands }) {
         })
       );
     }
-    // Compile the version information and check if it exists
-    // if not the version will be added to the versions directory
-    // and trigger an import
 
-
-    // process that measurements to a standard (long) format
+    // Loop through the expected measurands
     for (const measurand of measurands) {
       const measure = row[measurand.input_param];
+      const sensorId = getSensorId(sourceId, sensorNodeId, measurand.parameter, lifecycle, version);
+      // we should check for a version now as we could have a version without a measure
+      // Compile the version information and check if it exists
+      // if not the version will be added to the versions directory
+      // and trigger an import
+      if(lifecycle && version) {
+        if(!versions[sensorId]) {
+          versions[sensorId] = put_version(
+            new Version({
+              parent_sensor_id: getSensorId(sourceId, sensorNodeId, measurand.parameter),
+              sensor_id: sensorId,
+              version_id: version,
+              life_cycle_id: lifecycle,
+              readme: row.readme,
+            })
+          );
+        }
+      }
+      // Now we can check for a measure and potentially skip
       if ([undefined, null, 'NaN'].includes(measure)) continue;
+      // add the measurement to the measures
       measures.push({
-        sensor_id: getSensorId(sourceId, sensorNodeId, measurand.parameter, lifecycle, version),
+        sensor_id: sensorId,
         measure: measurand.normalize_value(measure),
         timestamp: row.datetime,
       });
     }
   }
 
-  // Now
-  const filename = file.name.endsWith('.csv') ? file.name.slice(0, -4) : file.name;
-  return put_measures(sourceId, measures, filename);
+  // Now we can add any measurements created
+  if(measures.length) {
+    const filename = file.name.endsWith('.csv') ? file.name.slice(0, -4) : file.name;
+    put_measures(sourceId, measures, filename);
+  }
+
+  // what should we return to the processor??
+  return true;
 }
+
+
 
 
 module.exports = {

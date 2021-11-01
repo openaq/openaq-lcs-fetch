@@ -105,14 +105,16 @@ class SensorSystem {
 
 class Version {
   constructor(p = {}) {
+    this.parent_sensor_id = null;
     this.version_id = null;
     this.sensor_id = null;
     this.life_cycle_id = null;
-    this.read = null;
+    this.readme = null;
     Object.assign(this, p);
   }
   json() {
     return stripNulls({
+      parent_sensor_id: this.parent_sensor_id,
       version_id: this.version_id,
       sensor_id: this.sensor_id,
       life_cycle_id: this.life_cycle_id,
