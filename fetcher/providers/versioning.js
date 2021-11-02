@@ -23,9 +23,12 @@ const zlib = require('zlib');
 const fs = require('fs');
 const readdir = promisify(fs.readdir);
 const gzip = promisify(zlib.gzip);
+const unzip = promisify(zlib.unzip);
 const { currentDateString } = require('../lib/utils');
 const AWS = require('aws-sdk');
 //const unzip = promisify(zlib.unzip);
+
+const readFile = promisify(fs.readFile);
 
 const {
   Sensor,
@@ -66,6 +69,39 @@ async function fetchSecret(source_name) {
 }
 
 
+const writeJson = async (data, filepath) => {
+  const jsonString = path.extname(filepath) === ".gz"
+        ? await gzip(JSON.stringify(data))
+        : JSON.stringify(data);
+  //await fs.promises.writeFile(filepath, jsonString);
+  fs.writeFileSync(filepath, jsonString);
+  return true;
+};
+
+
+const readJson = (filepath) => {
+  var json = {};
+  var buffer;
+  if(fs.existsSync(filepath)) {
+    //var buffer = await readFile(filepath);
+    buffer = fs.readFileSync(filepath, 'utf-8');
+
+    if(path.extname(filepath) == ".gz") {
+      // decompress
+    }
+    if(buffer) {
+      json = JSON.parse(buffer);
+    }
+  } else {
+    console.log('file not found', filepath);
+  }
+  // as json
+  return(json);
+};
+
+
+
+
 /**
  * Add the station data to the local directory. Just for testing purposes
  *
@@ -76,12 +112,21 @@ async function fetchSecret(source_name) {
  */
 const put_station = async (sourceId, station) => {
   // simply write the staion to a local folder
-  const providerStation = `${sourceId}-${station.sensor_node_id}.json.gz`;
-  const filePath = path.join(__dirname, '../data/cmu/stations', providerStation);
-  const compressedString = await gzip(JSON.stringify(station.json()));
-  await fs.promises.writeFile(filePath, compressedString);
-  return(filePath);
+  const providerStation = `${sourceId}-${station.sensor_node_id}.json`;
+  const filepath = path.join(__dirname, '../data/cmu/stations', providerStation);
+
+  const current = await get_station({ filepath });
+  station.merge(current);
+
+  await writeJson(station.json(), filepath);
+  return(filepath);
 };
+
+const get_station = ({ filepath }) => {
+  const data = readJson(filepath);
+  return(data);
+};
+
 
 /**
  * Add the measurement data to the local directory. Just for testing purposes.
@@ -113,12 +158,23 @@ const put_measures = async (provider, measures, id) => {
  * @returns {string}
  */
 const put_version = async (version) => {
-  const filename = `${version.sensor_id}.json.gz`;
-  const filePath = path.join(__dirname, '../data/cmu/versions', filename);
-  const compressedString = await gzip(JSON.stringify(version.json()));
-  await fs.promises.writeFile(filePath, compressedString);
-  return(filePath);
+  //const basename = version.filename.slice(0, -4) + "-";
+  const basename = "";
+  const filename = `${basename}${version.sensor_id}.json`;
+  const filepath = path.join(__dirname, '../data/cmu/versions', filename);
+  const current = await get_version({ filepath });
+  version.merge(current);
+  //console.log(current, version.json());
+  await writeJson(version.json(), filepath);
+  return(filepath);
 };
+
+
+const get_version = ({ filepath }) => {
+  const data = readJson(filepath);
+  return(data);
+};
+
 
 
 
@@ -191,7 +247,15 @@ async function processor(source_name, source) {
   ]);
 
   // First we need to get the list of files to process
-  const files = await readdir(directoryPath);
+  //const files = await readdir(directoryPath);
+  const files = [
+    'locations.csv',
+    'versions_v1.csv',
+    'measurements_initial.csv',
+    'measurements_v1.csv',
+    'measurements_v1b.csv',
+  ];
+
 
   // Next we are going to loop through them and
   // read them in as a json array
@@ -203,7 +267,7 @@ async function processor(source_name, source) {
       path: filepath,
     };
     if(VERBOSE) console.log('processing file', filename);
-   return new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       fs.createReadStream(filepath)
         .pipe(csv())
         .on('data', row => data.push(row))
@@ -245,6 +309,7 @@ async function process({ file, data, measurands }) {
   const sourceId = 'versioning';
   const versions = {};
   const stations = {};
+  const undefines = [undefined, null, 'NaN', 'NA'];
 
   // even though we are supporting 3 file types we want to make sure that
   // we do not require a seperate version and location file if its not needed.
@@ -261,9 +326,12 @@ async function process({ file, data, measurands }) {
         new SensorNode({
           sensor_node_id: sensorNodeId,
           sensor_node_site_name: sensorNodeId,
-          //sensor_node_geometry: [Lon, Lat],
+          sensor_node_geometry: !undefines.includes(row.lat) ? [row.lng, row.lat] : null,
+          sensor_node_country: row.country,
+          sensor_node_city: row.city,
           sensor_node_source_name: sourceId,
-          sensor_node_ismobile: false,
+          sensor_node_ismobile: row.ismobile,
+          sensor_node_project: row.project,
           sensor_system: new SensorSystem({
             sensors: measurands
               .map((measurand) => (
@@ -294,13 +362,14 @@ async function process({ file, data, measurands }) {
               sensor_id: sensorId,
               version_id: version,
               life_cycle_id: lifecycle,
+              filename: file.name,
               readme: row.readme,
             })
           );
         }
       }
       // Now we can check for a measure and potentially skip
-      if ([undefined, null, 'NaN'].includes(measure)) continue;
+      if (undefines.includes(measure)) continue;
       // add the measurement to the measures
       measures.push({
         sensor_id: sensorId,

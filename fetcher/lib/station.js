@@ -12,8 +12,8 @@ class SensorNode {
         this.sensor_node_timezone = null;
         this.sensor_node_reporting_frequency = null;
         this.sensor_node_city = null;
-        this.sensor_node_country = null;
-
+      this.sensor_node_country = null;
+      this.sensor_node_project = null,
         this.sensor_systems = [];
 
         if (p.sensor_system) {
@@ -23,6 +23,22 @@ class SensorNode {
 
         Object.assign(this, p);
     }
+
+  merge(obj) {
+    const ignore = ['sensor_systems','sensor_node_geometry'];
+    for(const [key, value] of Object.entries(this)) {
+      if(!ignore.includes(key)
+         && !!obj[key]
+         && obj[key] != value) {
+        this[key] = obj[key];
+      }
+    }
+    if(obj.sensor_node_geometry) {
+      this.sensor_node_geometry = obj.sensor_node_geometry;
+    }
+    //console.log(this.sensor_systems);
+  }
+
 
     json() {
         return stripNulls({
@@ -38,7 +54,8 @@ class SensorNode {
             sensor_node_timezone: this.sensor_node_timezone,
             sensor_node_reporting_frequency: this.sensor_node_reporting_frequency,
             sensor_node_city: this.sensor_node_city,
-            sensor_node_country: this.sensor_node_country,
+          sensor_node_country: this.sensor_node_country,
+          sensor_node_project: this.sensor_node_project,
             sensor_systems: this.sensor_systems.map((s) => s.json())
         });
     }
@@ -110,14 +127,47 @@ class Version {
     this.sensor_id = null;
     this.life_cycle_id = null;
     this.readme = null;
+    this.filename = null;
+    this.merged = [];
     Object.assign(this, p);
   }
+
+  different(obj) {
+    const keys = [
+      'parent_sensor_id',
+      'sensor_id',
+      'version_id',
+      'life_cycle_id',
+      'readme',
+    ];
+    return keys.some( key => {
+      let value = this[key];
+      return typeof(value)!=='object' && value != obj[key];
+    });
+  }
+
+  merge(obj) {
+    if(obj.sensor_id != this.sensor_id) {
+      console.warn('You are trying to merge non-matching versions');
+      return;
+    }
+    if(obj.merged && obj.merged.length) {
+      this.merged = [ ...this.merged, ...obj.merged ];
+    }
+    if(obj.readme) {
+      this.readme = obj.readme;
+      this.merged.push(obj.filename);
+    }
+  }
+
   json() {
     return stripNulls({
       parent_sensor_id: this.parent_sensor_id,
       version_id: this.version_id,
       sensor_id: this.sensor_id,
       life_cycle_id: this.life_cycle_id,
+      filename: this.filename,
+      merged: this.merged,
       readme: this.readme,
     });
   }
