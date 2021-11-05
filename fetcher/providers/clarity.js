@@ -105,7 +105,7 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
-            return response.filter(o => o.lifeStage === 'working')
+            return response.filter((o) => o.lifeStage === 'working');
         });
     }
 
