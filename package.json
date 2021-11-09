@@ -8,10 +8,12 @@
     "scripts": {
         "test": "tape test/**.test.js | tap-dot",
         "lint": "eslint 'fetcher/*.js' 'fetcher/!(node_modules)/**/*.js' scheduler/**/*.js",
-        "doc": "documentation serve -w fetcher/**/*.js",
-      "local": "LCS_API=https://api.openaq.org STACK=my-dev-stack SECRET_STACK=my-prod-stack BUCKET=openaq-fetches VERBOSE=1 SOURCE=versioning node fetcher/index.js"
+      "doc": "documentation serve -w fetcher/**/*.js",
+        "test@local": "LCS_API=https://api.openaq.org STACK=my-local-stack SECRET_STACK=my-prod-stack BUCKET=openaq-fetches VERBOSE=1 SOURCE=versioning node fetcher/index.js",
+        "test@staging": "LCS_API=https://api.openaq.org STACK=my-staging-stack SECRET_STACK=my-staging-stack BUCKET=openaq-talloaks-bucket VERBOSE=1 SOURCE=versioning node fetcher/index.js"
     },
     "dependencies": {
+        "@google-cloud/storage": "^5.15.6",
         "csv-parser": "^2.3.3",
         "csv-writer": "^1.6.0",
         "dayjs": "^1.9.6",

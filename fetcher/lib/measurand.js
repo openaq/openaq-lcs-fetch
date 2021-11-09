@@ -73,6 +73,7 @@ class Measurand {
                 .filter((measurand_parameter) => !supportedMeasurandParameters.includes(measurand_parameter))
                 .map((measurand_parameter) => console.debug(`warning - ignoring unsupported parameters: ${measurand_parameter}`));
         }
+
         return supportedLookups.map(
             ([input_param, [parameter, unit]]) => (
                 new Measurand({ input_param, parameter, unit })

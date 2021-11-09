@@ -26,6 +26,8 @@ const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 const { currentDateString } = require('../lib/utils');
 const AWS = require('aws-sdk');
+//const { google, drive_v3 } = require('googleapis');
+const { Storage } = require('@google-cloud/storage');
 //const unzip = promisify(zlib.unzip);
 
 const readFile = promisify(fs.readFile);
@@ -55,6 +57,10 @@ const {
 //   MetaDetails
 // } = require('../lib/meta');
 
+const storage = new Storage({
+    projectId: 'OpenAQ-testing',
+    keyFilename: 'fetcher/credentials.json'
+});
 
 /**
  * Retrieve secret from AWS Secrets Manager
@@ -64,8 +70,8 @@ const {
  * @returns {object}
  */
 async function fetchSecret(source_name) {
-  console.log('fetch secret', source_name);
     //return JSON.parse(SecretString);
+  return {};
 }
 
 
@@ -99,7 +105,7 @@ const readJson = (filepath) => {
   return(json);
 };
 
-
+//const getSupportedMeasurands()
 
 
 /**
@@ -113,8 +119,7 @@ const readJson = (filepath) => {
 const put_station = async (sourceId, station) => {
   // simply write the staion to a local folder
   const providerStation = `${sourceId}-${station.sensor_node_id}.json`;
-  const filepath = path.join(__dirname, '../data/cmu/stations', providerStation);
-
+  const filepath = path.join(__dirname, process.env.DIRECTORY, 'stations', providerStation);
   const current = await get_station({ filepath });
   station.merge(current);
 
@@ -142,7 +147,7 @@ const put_measures = async (provider, measures, id) => {
     return console.warn('No measures found, not adding to local folder.');
   }
   const filename = `${id}.csv.gz`;
-  const filePath = path.join(__dirname, '../data/cmu/measurements', filename);
+  const filePath = path.join(__dirname, process.env.DIRECTORY, 'measures', filename);
   const compressedString = await gzip(measures.csv());
   await fs.promises.writeFile(filePath, compressedString);
   return(filePath);
@@ -161,7 +166,7 @@ const put_version = async (version) => {
   //const basename = version.filename.slice(0, -4) + "-";
   const basename = "";
   const filename = `${basename}${version.sensor_id}.json`;
-  const filepath = path.join(__dirname, '../data/cmu/versions', filename);
+  const filepath = path.join(__dirname, process.env.DIRECTORY, 'versions', filename);
   const current = await get_version({ filepath });
   version.merge(current);
   //console.log(current, version.json());
@@ -175,8 +180,102 @@ const get_version = ({ filepath }) => {
   return(data);
 };
 
+const fetchFileListLocal = async (meta) => {
+  const { directory } = meta;
+  const directoryPath = path.join(__dirname, directory, 'staging/pending');
+  const list = await readdir(directoryPath);
+  const files = list.map( filename => ({
+	  name: filename,
+	  path: path.join(directoryPath, filename),
+  }));
+  return files;
+};
 
+const fetchFileLocal = async file => {
+  const filepath = file.path;
+  const data = [];
+  return new Promise((resolve, reject) => {
+	  fs.createReadStream(filepath)
+      .pipe(csv())
+      .on('data', row => data.push(row))
+      .on('end', () => {
+		    resolve(data);
+      });
+  });
+};
 
+const fetchFileListGoogleBucket = async meta => {
+  const bucket = process.env.BUCKET;
+  const f = [];
+
+  const options = {
+	  prefix: 'pending/',
+	  delimeter: '/',
+  };
+  const [files] = await storage.bucket(bucket).getFiles(options);
+
+  files.forEach(file => {
+	  f.push({
+	    path: file.name,
+	    name: path.basename(file.name),
+	    id: file.id,
+	    bucket,
+	  });
+  });
+  return f;
+};
+
+const fetchFileGoogleBucket = file => {
+  const data = [];
+  return new Promise((resolve, reject) => {
+    storage
+	    .bucket(file.bucket)
+	    .file(file.path)
+	    .createReadStream() //stream is created
+      .pipe(csv())
+      .on('data', row => data.push(row))
+      .on('end', () => {
+	      resolve(data);
+      });
+  });
+};
+
+const moveFileGoogleBucket = async (file, destDirectory) => {
+  const dest = path.join(destDirectory, file.name);
+  await storage.bucket(file.bucket).file(file.path).move(dest);
+  file.path = dest;
+  return file;
+};
+
+const moveFileLocal = async (file, destDirectory) => {
+    const dest = path.join(destDirectory, file.name);
+    file.path = dest;
+    return file;
+};
+
+const moveFile = async (file, destDirectory) => {
+  if(process.env.STACK == 'my-local-stack') {
+	  return await moveFileLocal(file, destDirectory);
+  } else {
+	  return await moveFileGoogleBucket(file, destDirectory);
+  }
+};
+
+const fetchFileList = async (meta) => {
+  if(process.env.STACK == 'my-local-stack') {
+	return await fetchFileListLocal(meta);
+  } else {
+	  return await fetchFileListGoogleBucket(meta);
+  }
+};
+
+const fetchFile = async file => {
+  if(process.env.STACK == 'my-local-stack') {
+	  return await fetchFileLocal(file);
+  } else {
+	  return await fetchFileGoogleBucket(file);
+  }
+};
 
 /**
  * Build sensor ID from a given sensor node ID and measurand parameter.
@@ -230,6 +329,10 @@ async function processor(source_name, source) {
 
   const { directory, parameters } = source.meta;
   const limit = pLimit(10);
+
+  // for testing
+  process.env.DIRECTORY = directory;
+
   const directoryPath = path.join(__dirname, directory, 'staging/pending');
   const filesToProcess = [];
   // passing a stations object does not make sense when we have different file types
@@ -247,49 +350,21 @@ async function processor(source_name, source) {
   ]);
 
   // First we need to get the list of files to process
-  //const files = await readdir(directoryPath);
-  const files = [
-    'locations.csv',
-    'versions_v1.csv',
-    'measurements_initial.csv',
-    'measurements_v1.csv',
-    'measurements_v1b.csv',
-  ];
-
-
+  const files = await fetchFileList(source.meta);
   // Next we are going to loop through them and
   // read them in as a json array
-  await Promise.all(files.map( async (filename) => {
-    let filepath = path.resolve(directoryPath, filename);
-    let data = [];
-    let file = {
-      name: filename,
-      path: filepath,
-    };
-    if(VERBOSE) console.log('processing file', filename);
-    return new Promise((resolve, reject) => {
-      fs.createReadStream(filepath)
-        .pipe(csv())
-        .on('data', row => data.push(row))
-        .on('end', () => {
-          // trying to remain consistent with other providers
-          // so we are using the limit method
-          // also, we are going to pass all files to the same process method
-          // and let that method sort out which file it is.
-          filesToProcess.push(
-            limit(() => process({ file, data, measurands }))
-          );
-          resolve();
-        });
-    });
+  await Promise.all(files.map( async (file) => {
+	  if(VERBOSE) console.log('fetching file data', file.name);
+	  const data = await fetchFile(file);
+	  if(VERBOSE) console.log('processing data', data.length, file.name);
+	  const res = await processFile({ file, data, measurands });
+	  if(VERBOSE) console.log('moving file', file.name);
+	  //moveFile(file, 'processed');
+	  return res;
   }));
 
-  // what is the point of this?
-  //await Promise.all(Object.values(stations));
-  //console.log(`ok - all ${Object.values(stations).length} fixed stations pushed`);
-
-  await Promise.all(filesToProcess);
-  console.log(`ok - all ${filesToProcess.length} files processed`);
+  //await Promise.all(filesToProcess);
+  console.log(`ok - all ${files.length} files processed`);
 
 }
 
@@ -303,7 +378,7 @@ async function processor(source_name, source) {
  *
  * @returns {??}
  */
-async function process({ file, data, measurands }) {
+async function processFile({ file, data, measurands }) {
 
   const measures = new Measures(FixedMeasure);
   const sourceId = 'versioning';
@@ -361,7 +436,8 @@ async function process({ file, data, measurands }) {
               parent_sensor_id: getSensorId(sourceId, sensorNodeId, measurand.parameter),
               sensor_id: sensorId,
               version_id: version,
-              life_cycle_id: lifecycle,
+		life_cycle_id: lifecycle,
+		parameter: measurand.parameter,
               filename: file.name,
               readme: row.readme,
             })

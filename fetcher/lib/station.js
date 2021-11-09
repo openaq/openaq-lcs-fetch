@@ -14,14 +14,24 @@ class SensorNode {
         this.sensor_node_city = null;
       this.sensor_node_country = null;
       this.sensor_node_project = null,
-        this.sensor_systems = [];
+      this.sensor_systems = [];
 
-        if (p.sensor_system) {
-            this.sensor_systems.push(p.sensor_system);
-            delete p.sensor_system;
-        }
+      if(p.city) {
+        this.sensor_node_city = p.city;
+      }
+      if(p.project) {
+        this.sensor_node_project = p.project;
+      }
+      if(p.country) {
+        this.sensor_node_country = p.country;
+      }
 
-        Object.assign(this, p);
+      if (p.sensor_system) {
+        this.sensor_systems.push(p.sensor_system);
+        delete p.sensor_system;
+      }
+
+      Object.assign(this, p);
     }
 
   merge(obj) {
@@ -36,7 +46,19 @@ class SensorNode {
     if(obj.sensor_node_geometry) {
       this.sensor_node_geometry = obj.sensor_node_geometry;
     }
-    //console.log(this.sensor_systems);
+    // If both nodes have only one system we can attempt to merge
+    if(obj.sensor_systems
+       && obj.sensor_systems.length === 1
+       && this.sensor_systems.length === 1) {
+      const existing = this.sensor_systems[0].sensors.map(d => d.sensor_id);
+      const added = [];
+      obj.sensor_systems[0].sensors.map( s => {
+        if(!existing.includes(s.sensor_id)) {
+          this.sensor_systems[0].sensors.push(new Sensor(s));
+          added.push(s.sensor_id);
+        }
+      });
+    }
   }
 
 
@@ -121,23 +143,25 @@ class SensorSystem {
 }
 
 class Version {
-  constructor(p = {}) {
-    this.parent_sensor_id = null;
-    this.version_id = null;
-    this.sensor_id = null;
-    this.life_cycle_id = null;
-    this.readme = null;
-    this.filename = null;
-    this.merged = [];
-    Object.assign(this, p);
-  }
+    constructor(p = {}) {
+	this.parent_sensor_id = null;
+	this.version_id = null;
+	this.sensor_id = null;
+	this.life_cycle_id = null;
+	this.readme = null;
+	this.filename = null;
+	this.parameter = null;
+	this.merged = [];
+	Object.assign(this, p);
+    }
 
   different(obj) {
     const keys = [
       'parent_sensor_id',
       'sensor_id',
       'version_id',
-      'life_cycle_id',
+	'life_cycle_id',
+	'parameter',
       'readme',
     ];
     return keys.some( key => {
@@ -164,10 +188,11 @@ class Version {
     return stripNulls({
       parent_sensor_id: this.parent_sensor_id,
       version_id: this.version_id,
-      sensor_id: this.sensor_id,
+	sensor_id: this.sensor_id,
+	parameter: this.parameter,
       life_cycle_id: this.life_cycle_id,
       filename: this.filename,
-      merged: this.merged,
+      // merged: this.merged,
       readme: this.readme,
     });
   }

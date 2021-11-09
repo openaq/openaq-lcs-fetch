@@ -2,14 +2,20 @@
   "schema": "v1",
   "provider": "versioning",
   "meta": {
-    "directory": "../data/cmu",
+    "directory": "../../../openaq-api-v2/openaq_fastapi/openaq_fastapi/ingest/testdata",
+    "source": {
+      "type": "google-bucket",
+      "config": {
+        "bucket":"openaq-talloaks-bucket"
+      }
+    },
     "parameters": {
       "co": ["co", "ppb"],
       "no": ["no", "ppb"],
       "no2": ["no2", "ppb"],
       "o3": ["o3", "ppb"],
       "p": ["pressure", "hpa"],
-      "pm025": ["pm25", "μg/m³"],
+      "pm025": ["pm25", "ppb"],
       "rh": ["relativehumidity", "%"],
       "so2": ["so2", "ppb"],
       "temp": ["temperature", "c"]
