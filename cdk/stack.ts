@@ -13,7 +13,15 @@ export class EtlPipeline extends cdk.Stack {
     constructor(
         scope: cdk.Construct,
         id: string,
-        { fetcherModuleDir, schedulerModuleDir, sources, lcsApi, bucketName, ...props }: StackProps
+      {
+        fetcherModuleDir,
+        schedulerModuleDir,
+        sources,
+       // lcsApi,
+        bucketName,
+        fetcherEnv,
+        ...props
+      }: StackProps
     ) {
         super(scope, id, props);
 
@@ -23,17 +31,31 @@ export class EtlPipeline extends cdk.Stack {
         });
         const bucket = s3.Bucket.fromBucketName(this, "Data", bucketName);
 
-        this.buildFetcherLambda({ moduleDir: fetcherModuleDir, queue, bucket, lcsApi });
-        this.buildSchedulerLambdas({ moduleDir: schedulerModuleDir, queue, sources });
+
+      this.buildFetcherLambda({
+        moduleDir: fetcherModuleDir,
+        queue,
+        bucket,
+        //lcsApi,
+        fetcherEnv,
+      });
+
+      this.buildSchedulerLambdas({
+        moduleDir: schedulerModuleDir,
+        queue,
+        sources
+      });
     }
 
     private buildFetcherLambda(props: {
         moduleDir: string;
         queue: sqs.Queue;
         bucket: s3.IBucket;
-        lcsApi: string;
+      //lcsApi: string;
+      fetcherEnv: object;
     }): lambda.Function {
-        this.prepareNodeModules(props.moduleDir);
+      this.prepareNodeModules(props.moduleDir);
+
         const handler = new lambda.Function(this, "Fetcher", {
             description: "Fetch a single source for a given time period",
             runtime: lambda.Runtime.NODEJS_12_X,
@@ -45,7 +67,8 @@ export class EtlPipeline extends cdk.Stack {
                 BUCKET: props.bucket.bucketName,
                 STACK: cdk.Stack.of(this).stackName,
                 VERBOSE: '1',
-                LCS_API: props.lcsApi
+              //LCS_API: props.lcsApi,
+              ...props.fetcherEnv,
             },
         });
         handler.addEventSource(
@@ -125,9 +148,10 @@ export class EtlPipeline extends cdk.Stack {
 }
 
 interface StackProps extends cdk.StackProps {
-    fetcherModuleDir: string;
-    schedulerModuleDir: string;
-    lcsApi: string;
-    bucketName: string;
-    sources: Source[];
+  fetcherModuleDir: string;
+  schedulerModuleDir: string;
+  //lcsApi: string;
+  bucketName: string;
+  sources: Source[];
+  fetcherEnv: object;
 }

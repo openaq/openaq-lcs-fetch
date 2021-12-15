@@ -1,24 +1,37 @@
 {
   "schema": "v1",
   "provider": "versioning",
-  "meta": {
-    "directory": "../../../openaq-api-v2/openaq_fastapi/openaq_fastapi/ingest/testdata",
-    "source": {
-      "type": "google-bucket",
-      "config": {
-        "bucket":"openaq-talloaks-bucket"
-      }
-    },
-    "parameters": {
-      "co": ["co", "ppb"],
-      "no": ["no", "ppb"],
-      "no2": ["no2", "ppb"],
-      "o3": ["o3", "ppb"],
-      "p": ["pressure", "hpa"],
-      "pm025": ["pm25", "ppb"],
-      "rh": ["relativehumidity", "%"],
-      "so2": ["so2", "ppb"],
-      "temp": ["temperature", "c"]
-    }
+  "frequency": "minute",
+  "type": "google-bucket",
+  "config" : {
+    "bucket":"openaq-talloaks-bucket",
+    "directory": "../../../openaq-api-v2/openaq_fastapi/openaq_fastapi/ingest/testdata"
+  },
+  "parameters": {
+    "co": ["co", "ppb"],
+    "no": ["no", "ppb"],
+    "no2": ["no2", "ppb"],
+    "o3": ["o3", "ppb"],
+    "p": ["pressure", "hpa"],
+    "pm25": ["pm25", "ppb"],
+    "pm10": ["pm10", "ppb"],
+    "rh": ["relativehumidity", "%"],
+    "so2": ["so2", "ppb"],
+    "temp": ["temperature", "c"],
+    "ws": ["wind_speed", "m/s"],
+    "wd": ["wind_direction", "deg"],
+    "bc": ["bc","ppb"],
+    "ec": ["ec","ppb"],
+    "oc": ["oc","ppb"],
+    "so4": ["so4","ppb"],
+    "cl": ["cl","ppb"],
+    "k": ["k","ppb"],
+    "no3": ["no3","ppb"],
+    "pb": ["pb","ppb"],
+    "as": ["as","ppb"],
+    "ca": ["ca","ppb"],
+    "fe": ["fe","ppb"],
+    "ni": ["ni","ppb"],
+    "v": ["v","ppb"]
   }
 }

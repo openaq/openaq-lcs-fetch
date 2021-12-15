@@ -1,7 +1,7 @@
 {
   "schema": "v1",
   "provider": "cmu",
-  "frequency": "hour",
+  "frequency": "",
   "meta": {
     "folderId": "1Mp_a-OyGGlk5tGkezYK41iZ2qybnrPzp"
   }

@@ -20,8 +20,8 @@ async function handler(event) {
         const source = sources.find((source) => source.provider === source_name);
         if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
 
-        console.log(`Processing ${process.env.STACK}: '${source_name}'`);
-        await providers.processor(source_name, source);
+      console.log(`Processing ${process.env.STACK}: '${source_name}'`, source);
+      await providers.processor(source_name, source);
 
         return {};
     } catch (err) {

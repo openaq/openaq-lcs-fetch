@@ -5,13 +5,16 @@ import { EtlPipeline } from "./stack";
 
 const app = new cdk.App();
 
-const stack = new EtlPipeline(app, "lcs-etl-pipeline", {
-  description: "Low Cost Sensors: ETL Pipeline",
-  fetcherModuleDir: "fetcher",
-  schedulerModuleDir: "scheduler",
+const stack = new EtlPipeline(app, `cac-pipeline`, {
+  description: `ETL Pipeline`,
+  fetcherModuleDir: "../fetcher",
+  schedulerModuleDir: "../scheduler",
   sources: require('../fetcher/sources'),
-  bucketName: process.env.BUCKET || 'openaq-fetches',
-  lcsApi: process.env.LCS_API || 'https://api.openaq.org'
+  bucketName: process.env.BUCKET || 'talloaks-openaq-ingest',
+  fetcherEnv: {
+    API_URL: process.env.API_URL || 'https://aagsfsmu92.execute-api.us-west-2.amazonaws.com'
+  },
 });
 
-cdk.Tags.of(stack).add('Project', 'lcs')
+
+cdk.Tags.of(stack).add('project', 'cac')
