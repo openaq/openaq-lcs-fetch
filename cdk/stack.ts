@@ -118,7 +118,7 @@ export class EtlPipeline extends cdk.Stack {
                         QUEUE_URL: props.queue.queueUrl,
                         SOURCES: props.sources
                             .filter((source) => source.frequency === interval)
-                            .map((source) => source.provider)
+                            .map((source) => source.name)
                             .join(","),
                     },
                 }
