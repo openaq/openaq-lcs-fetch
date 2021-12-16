@@ -22,7 +22,7 @@ const lookup = {
     'ozone1': ['ozone', 'ppb']
 };
 
-async function processor(source_name, source) {
+async function processor(source) {
     const [
         measurands,
         sensorReadings
@@ -32,6 +32,7 @@ async function processor(source_name, source) {
             .then(({ apiKey }) => fetchSensorData(source, apiKey))
     ]);
 
+  const source_name = source.name;
     const stations = [];
     const measures = new Measures(FixedMeasure);
 

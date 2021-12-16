@@ -33,7 +33,7 @@ const lookup = {
     'T': ['temperature', 'c'] // Temperature
 };
 
-async function processor(source_name, source) {
+async function processor(source) {
     // https://developers.google.com/identity/protocols/oauth2/service-account
     const [
         measurands,
@@ -43,6 +43,7 @@ async function processor(source_name, source) {
         fetchSecret(source.provider)
     ]);
 
+  const source_name = source.name;
     const meta = new MetaDetails(source_name);
 
     const drive = new DriveFiles({

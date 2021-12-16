@@ -1,4 +1,5 @@
 {
+  "name": "cmu",
   "schema": "v1",
   "provider": "cmu",
   "frequency": "",

@@ -45,10 +45,10 @@ const {
 
 // we are going to process files in batches and then
 // save everything all at once
-const versions = {}; // for tracking versions
-const stations = {}; // for keeping track of new stations
-const sensors = {};  // for tracking new sensors
-const measures_list = [];
+var versions = {}; // for tracking versions
+var stations = {}; // for keeping track of new stations
+var sensors = {};  // for tracking new sensors
+var measures_list = [];
 
 
 /**
@@ -94,14 +94,19 @@ function getSensorId(sourceId, sensorNodeId, measurandParameter, lifeCycle, vers
  * A location file which provides metadata for the location/station
  * and a version file which allows for a readme to be added.
  *
- * @param {string} source_name - The name used for the source
  * @param {object} source - An object that also includes the source name?
  *
  * @returns {string}
  */
-async function processor(source_name, source) {
+async function processor(source) {
 
   process.env.PROVIDER = source.provider;
+
+  // reset global variables
+  versions = {};
+  stations = {};
+  sensors = {};
+  measures_list = [];
 
   const [
     measurands,
@@ -125,7 +130,7 @@ async function processor(source_name, source) {
   await Promise.all(files.map( async (file) => {
 	  const data = await fetchFile(file);
 	  const res = await processFile({ file, data, measurands });
-	  //moveFile(file, 'processed');
+	  moveFile(file, 'processed');
 	  return res;
   }));
 

@@ -26,13 +26,12 @@ class Providers {
     /**
      * Given a source config file, choose the corresponding provider script to run
      *
-     * @param {String} source_name
      * @param {Object} source
      */
-    async processor(source_name, source) {
+    async processor(source) {
         if (!this[source.provider]) throw new Error(`${source.provider} is not a supported provider`);
 
-        await this[source.provider].processor(source_name, source);
+        await this[source.provider].processor(source);
     }
 
     /**

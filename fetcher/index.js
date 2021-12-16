@@ -16,12 +16,13 @@ async function handler(event) {
         if (!process.env.STACK)
             process.env.STACK = 'local';
 
-        const source_name = process.env.SOURCE || event.Records[0].body;
-        const source = sources.find((source) => source.provider === source_name);
-        if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
+      const source_name = process.env.SOURCE || event.Records[0].body;
+      const source = sources.find((source) => source.name === source_name);
+
+      if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
 
       console.log(`Processing ${process.env.STACK}: '${source_name}'`, source);
-      await providers.processor(source_name, source);
+      await providers.processor(source);
 
         return {};
     } catch (err) {
