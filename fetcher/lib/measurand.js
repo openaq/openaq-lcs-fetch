@@ -43,11 +43,11 @@ class Measurand {
      */
     static async getSupportedMeasurands(lookups) {
       // Fetch from API
-        const supportedMeasurandParameters = [];
+      const supportedMeasurandParameters = [];
+      const url = new URL('/v2/parameters', process.env.API_URL || 'https://api.openaq.org');
         let morePages;
         let page = 1;
         do {
-            const url = new URL('/v2/parameters', process.env.API_URL || 'https://api.openaq.org');
             url.searchParams.append('page', page++);
             const { body: { meta, results } } = await request({
                 json: true,
@@ -60,7 +60,7 @@ class Measurand {
             morePages = meta.found > meta.page * meta.limit;
         } while (morePages);
       //if (VERBOSE)
-        console.debug(`Fetched ${supportedMeasurandParameters.length} supported measurement parameters.`);
+        console.debug(`Fetched ${supportedMeasurandParameters.length} supported parameters from ${url}.`);
 
         // Filter provided lookups
         const supportedLookups = Object.entries(lookups).filter(
@@ -73,7 +73,7 @@ class Measurand {
             Object.values(lookups)
                 .map(([measurand_parameter]) => measurand_parameter)
                 .filter((measurand_parameter) => !supportedMeasurandParameters.includes(measurand_parameter))
-                .map((measurand_parameter) => console.debug(`warning - ignoring unsupported parameters: ${measurand_parameter}`));
+                .map((measurand_parameter) => console.warn(`ignoring unsupported parameter: ${measurand_parameter}`));
         }
 
         return supportedLookups.map(

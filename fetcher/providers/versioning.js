@@ -35,6 +35,7 @@ const {
 const {
   VERBOSE,
   fetchSecret,
+  revokeCredentials,
   getObject,
   putObject,
   listFiles,
@@ -100,20 +101,21 @@ function getSensorId(sourceId, sensorNodeId, measurandParameter, lifeCycle, vers
  */
 async function processor(source) {
 
-  process.env.PROVIDER = source.provider;
+  process.env.PROVIDER = source.name;
 
   // reset global variables
   versions = {};
   stations = {};
   sensors = {};
   measures_list = [];
+  revokeCredentials();
 
   const [
     measurands,
     credentials
   ] = await Promise.all([
     Measurand.getSupportedMeasurands(source.parameters),
-    fetchSecret(source.provider)
+    fetchSecret(source.name)
   ]);
 
   if(credentials) {
@@ -123,7 +125,7 @@ async function processor(source) {
 
   // First we need to get the list of files to process
   const files = await listFiles(source);
-  console.debug(`Processing ${files.length} files`);
+  console.debug(`Processing ${files.length} files for ${source.name}`);
 
   // Next we are going to loop through them and
   // read them in as a json array

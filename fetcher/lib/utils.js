@@ -18,9 +18,13 @@ const VERBOSE = !!process.env.VERBOSE;
 // global storage object
 var storage;
 
+const revokeCredentials = () => {
+  storage = null;
+};
+
 const applyCredentials = credentials => {
   if(!storage && credentials) {
-    console.debug('Initializing storage object', credentials.project_id);
+    console.debug(`Initializing storage object '${credentials.project_id}' as ${credentials.client_email}`);
     let projectId = credentials.project_id;
     // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
     storage = new Storage({
@@ -148,7 +152,7 @@ const listFilesGoogleBucket = async config => {
 	  delimeter: '/',
   };
 
-  console.debug(`Fetching file list from ${bucket}`);
+  console.debug(`Fetching file list from '${bucket}'`);
   const [files] = await storage.bucket(bucket).getFiles(options);
 
   files.forEach(file => {
@@ -266,6 +270,7 @@ const putFile = async (data, filepath) => {
 module.exports = {
   fetchSecret,
   applyCredentials,
+  revokeCredentials,
   request,
   VERBOSE,
   putObject,

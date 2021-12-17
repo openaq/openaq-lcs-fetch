@@ -21,7 +21,7 @@ async function handler(event) {
 
       if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
 
-      console.log(`Processing ${process.env.STACK}: '${source_name}'`, source);
+      console.log(`Processing ${process.env.STACK}: '${source.provider}/${source.name}'`);
       await providers.processor(source);
 
         return {};
