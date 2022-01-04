@@ -1,3 +1,4 @@
+const zlib = require('zlib');
 const { promisify } = require('util');
 const request = promisify(require('request'));
 const AWS = require('aws-sdk');
@@ -266,6 +267,23 @@ const putFile = async (data, filepath) => {
   const Bucket = process.env.BUCKET;
 };
 
+/**
+ * Transform phrase to camel case.
+ * e.g. toCamelCase("API Key") === "apiKey"
+ *
+ * @param {string} phrase
+ * @returns {string}
+ */
+function toCamelCase(phrase) {
+    return phrase
+        .split(' ')
+        .map((word) => word.toLowerCase())
+        .map((word, i) => {
+            if (i === 0) return word;
+            return word.replace(/^./, word[0].toUpperCase());
+        })
+        .join('');
+}
 
 module.exports = {
   fetchSecret,
@@ -280,4 +298,7 @@ module.exports = {
   listFiles,
   readJson,
   writeJson,
+  toCamelCase,
+  gzip,
+  unzip,
 };

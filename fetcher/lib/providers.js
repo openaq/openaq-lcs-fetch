@@ -1,15 +1,11 @@
 const fs = require('fs');
-const zlib = require('zlib');
-const { promisify } = require('util');
 const path = require('path');
 const AWS = require('aws-sdk');
-const { VERBOSE } = require('./utils');
+const { VERBOSE, gzip, unzip } = require('./utils');
 
 const s3 = new AWS.S3({
     maxRetries: 10
 });
-const gzip = promisify(zlib.gzip);
-const unzip = promisify(zlib.unzip);
 
 /**
  * Runtime handler for each of the custom provider scripts, as well
