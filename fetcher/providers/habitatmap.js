@@ -12,7 +12,8 @@ const lookup = {
 };
 
 
-async function processor(source_name, source) {
+async function processor(source) {
+    const source_name = source.name;
     const measurands = await Measurand.getSupportedMeasurands(lookup);
     await process_fixed_locations(source_name, source, measurands);
     await process_mobile_locations(source_name, source, measurands);

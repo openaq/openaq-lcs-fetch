@@ -1,7 +1,8 @@
 {
+  "name": "purpleair",
   "schema": "v1",
   "provider": "purpleair",
-  "frequency": "minute",
+  "frequency": "",
   "meta": {
     "url": "https://api.purpleair.com/"
   }

@@ -1,19 +1,27 @@
 const createCsvStringifier = require('csv-writer').createObjectCsvStringifier;
+const {
+  putObject
+} = require('./utils');
+
 
 /**
  * @class Measures
  */
 class Measures {
-    constructor(type) {
-        this.headers = [];
-        this.measures = [];
+  constructor(type, file) {
+    this.headers = [];
+    this.measures = [];
+    this.file = { name: 'uk-file' };
 
-        if (type === FixedMeasure) {
-            this.headers = ['sensor_id', 'measure', 'timestamp'];
-        } else if (type === MobileMeasure) {
-            this.headers = ['sensor_id', 'measure', 'timestamp', 'longitude', 'latitude'];
-        }
+    if (type === FixedMeasure) {
+      this.headers = ['sensor_id', 'measure', 'timestamp'];
+    } else if (type === MobileMeasure) {
+      this.headers = ['sensor_id', 'measure', 'timestamp', 'longitude', 'latitude'];
     }
+    if(file) {
+      this.file = file;
+    }
+  }
 
     push(measure) {
         this.measures.push(measure);
@@ -33,6 +41,24 @@ class Measures {
 
         return csvStringifier.stringifyRecords(this.measures);
     }
+
+  key() {
+    const stack = process.env.STACK;
+    const provider = process.env.PROVIDER;
+    const name = this.file.name.endsWith('.csv')
+          ? this.file.name.slice(0, -4)
+          : this.file.name;
+
+    return `${stack}/measures/${provider}/${name}.csv.gz`;
+  }
+
+  async put() {
+    const key = this.key();
+    //console.debug('PUTTING MEASURES', key);
+    await putObject(this, key);
+    return true;
+  }
+
 }
 
 /**
