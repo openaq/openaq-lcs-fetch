@@ -2,12 +2,12 @@ const zlib = require('zlib');
 const { promisify } = require('util');
 const request = promisify(require('request'));
 const AWS = require('aws-sdk');
-const zlib = require('zlib');
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 const path = require('path');
 const fs = require('fs');
 const csv = require('csv-parser');
+const readdir = promisify(fs.readdir);
 
 const s3 = new AWS.S3({
   maxRetries: 10
@@ -50,11 +50,16 @@ async function fetchSecret(source_name) {
 
   const SecretId = `${process.env.SECRET_STACK || process.env.STACK}/${source_name}`;
 
-  if (VERBOSE) console.debug(`Fetching ${SecretId}...`);
+  if (VERBOSE) console.debug(`Fetching secret - ${SecretId}...`);
 
   const { SecretString } = await secretsManager.getSecretValue({
     SecretId
-  }).promise();
+  }).promise()
+        .catch( err => {
+          // this is a stop gap until there is a way to say there is
+          // nothing to lookup
+          return { SecretString: '{}' };
+        });
 
   return JSON.parse(SecretString);
 }
@@ -74,12 +79,14 @@ const getObject = async (Key) => {
 
 const putObject = async (data, Key) => {
   const Bucket = process.env.BUCKET;
+  var ContentType = 'application/json';
   //console.debug('PUTTING OBJECT',  data.constructor.name, `${Bucket}/${Key}`);
 
   if(data.constructor.name === 'Object') {
     data = JSON.stringify(data);
   } else if(data.constructor.name === 'Measures') {
     data = await gzip(data.csv());
+    ContentType = 'text/csv';
   } else {
     console.warn('Writing object of unknown type',  data.constructor.name, typeof data, typeof data === 'string', data);
   }
@@ -92,9 +99,11 @@ const putObject = async (data, Key) => {
     Bucket,
     Key,
     Body: data,
-    ContentType: 'application/json',
+    ContentType,
     ContentEncoding: 'gzip',
-  }).promise();
+  }).promise().catch( err => {
+    console.log('error putting object', err);
+  });
 };
 
 const writeJson = async (data, filepath) => {

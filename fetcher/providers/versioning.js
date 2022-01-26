@@ -268,7 +268,6 @@ async function processFile({ file, data, measurands }) {
     }
   }
 
-
   // And then we can add any measurements created
   if(measures.length) {
     measures_list.push(measures);
