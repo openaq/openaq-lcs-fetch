@@ -1,0 +1,9 @@
+{
+    "schema": "v1",
+    "provider": "senstate",
+    "frequency": "minute",
+    "meta": {
+      "url": "https://open-data.senstate.cloud"
+    }
+  }
+  
