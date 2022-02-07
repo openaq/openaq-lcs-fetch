@@ -1,9 +1,30 @@
 {
-    "name": "openaq-etl",
+    "name": "openaq-lcs-fetch",
     "version": "1.0.0",
     "main": "fetcher/index.js",
-    "repository": "git@github.com:developmentseed/openaq-etl",
-    "author": "ingalls <nick@ingalls.ca>",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/openaq/openaq-lcs-fetch.git"
+    },
+    "author": {
+        "name" : "OpenAQ",
+        "email" : "dev@openaq.org",
+        "url" : "https://openaq.org"
+    },
+    "contributors": [
+        {  
+            "name" : "Nick Ingalls",
+            "email" : "nick@ingalls.ca"
+        },
+        {
+            "name": "Anthony Lukach",
+            "email": "anthony@developmentseed.org"
+        },
+        {
+            "name" : "Russ Biggs",
+            "email" : "russ@openaq.org"
+        }
+    ],
     "license": "MIT",
     "scripts": {
         "test": "tape test/**.test.js | tap-dot",
@@ -14,6 +35,7 @@
         "csv-parser": "^2.3.3",
         "csv-writer": "^1.6.0",
         "dayjs": "^1.9.6",
+        "geo-tz": "^7.0.1",
         "googleapis": "65",
         "p-limit": "^3.1.0",
         "request": "^2.88.2"

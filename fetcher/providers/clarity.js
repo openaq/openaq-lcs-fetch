@@ -165,6 +165,10 @@ class ClarityApi {
                 gzip: true
             });
 
+            if (response.statusCode !== 200) {
+                break;
+            }
+
             for (const measurement of response.body) {
                 yield measurement;
             }
