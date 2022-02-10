@@ -86,7 +86,10 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/datasources', this.baseUrl)
         }).then((response) => {
-            const ds = response.body;
+            var ds = response.body;
+            if(process.env.SOURCEID) {
+                ds = ds.filter(d => d.deviceCode == process.env.SOURCEID);
+            }
             if (VERBOSE) {
                 console.log(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
                 ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.group}`));
@@ -106,6 +109,10 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
+            if(process.env.SOURCEID) {
+                response = response.filter(d => d.code == process.env.SOURCEID);
+                console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length}`);
+            }
             const working = response.filter((o) => o.lifeStage === 'working');
             if (VERBOSE) {
                 console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);

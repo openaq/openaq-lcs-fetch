@@ -69,7 +69,7 @@ class Providers {
         try {
             const resp = await s3.getObject({ Bucket, Key }).promise();
             const currentData = (await unzip(resp.Body)).toString('utf-8');
-            if (currentData === newData) {
+            if (currentData === newData && !process.env.FORCE) {
                 if (VERBOSE) console.log(`station has not changed - station: ${providerStation}`);
                 return;
             }

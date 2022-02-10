@@ -2,7 +2,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { fetchSecret, request } = require('../lib/utils');
+const { VERBOSE, fetchSecret, request } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -23,7 +23,7 @@ const lookup = {
 };
 
 async function processor(source_name, source) {
-    const [
+    var [
         measurands,
         sensorReadings
     ] = await Promise.all([
@@ -35,7 +35,12 @@ async function processor(source_name, source) {
     const stations = [];
     const measures = new Measures(FixedMeasure);
 
-    console.log(`ok - pulled ${sensorReadings.length} stations`);
+    if(VERBOSE) console.log(`ok - pulled ${sensorReadings.length} stations`);
+
+    if(process.env.SOURCEID) {
+        sensorReadings = sensorReadings.filter(d => d.sensor_index == process.env.SOURCEID);
+        console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${sensorReadings.length}`);
+    }
 
     for (const reading of sensorReadings) {
         const system = new SensorSystem();
@@ -75,10 +80,10 @@ async function processor(source_name, source) {
     }
 
     await Promise.all(stations);
-    console.log(`ok - all ${stations.length} stations pushed`);
+    if(VERBOSE) console.log(`ok - all ${stations.length} stations pushed`);
 
     await Providers.put_measures(source_name, measures);
-    console.log(`ok - all ${measures.length} measurements pushed`);
+    if(VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
 }
 
 async function fetchSensorData(source, apiKey) {
@@ -109,7 +114,7 @@ async function fetchSensorData(source, apiKey) {
             'ozone1'
         ].join(',')
     );
-    url.searchParams.append('max_age', 75); // Filter results to only include sensors modified or updated within the last number of seconds.
+    url.searchParams.append('max_age', 750); // Filter results to only include sensors modified or updated within the last number of seconds.
     url.searchParams.append('location_type', 0); // Filter results to only include outdoor sensors.
 
     const { body: { fields, data } } = await request({
