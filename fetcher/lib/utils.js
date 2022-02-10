@@ -4,6 +4,7 @@ const request = promisify(require('request'));
 const AWS = require('aws-sdk');
 
 const VERBOSE = !!process.env.VERBOSE;
+const DRYRUN = !!process.env.DRYRUN;
 
 /**
  * Retrieve secret from AWS Secrets Manager
@@ -51,6 +52,33 @@ function toCamelCase(phrase) {
         .join('');
 }
 
+
+/**
+ * Print out JSON station object
+ * @param {obj} station
+ */
+function prettyPrintStation(station) {
+    if(typeof(station)==='string') {
+        station = JSON.parse(station);
+    }
+    for (const [key, value] of Object.entries(station)) {
+        if(key !== 'sensor_systems') {
+            console.log(`${key}: ${value}`);
+        } else {
+            console.log(`Sensor systems`);
+            value.map( ss => {
+                for (const [ky, vl] of Object.entries(ss)) {
+                    if(ky !== 'sensors') {
+                        console.log(`-- ${ky}: ${vl}`);
+                    } else {
+                        vl.map(s => console.debug(`---- ${s.sensor_id} - ${s.measurand_parameter} ${s.measurand_unit}`));
+                    }
+                }
+            });
+        };
+    }
+}
+
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 
@@ -60,5 +88,7 @@ module.exports = {
     toCamelCase,
     gzip,
     unzip,
-    VERBOSE
+    VERBOSE,
+    DRYRUN,
+    prettyPrintStation,
 };

@@ -80,15 +80,22 @@ class ClarityApi {
      * @returns {Promise<Datasource[]>}
      */
     listDatasources() {
-        if (VERBOSE)
-            console.log(`Listing datasources for ${this.org.organizationName}...`);
-
         return request({
             json: true,
             method: 'GET',
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/datasources', this.baseUrl)
-        }).then((response) => response.body);
+        }).then((response) => {
+            var ds = response.body;
+            if(process.env.SOURCEID) {
+                ds = ds.filter(d => d.deviceCode == process.env.SOURCEID);
+            }
+            if (VERBOSE) {
+                console.log(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
+                ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.group}`));
+            }
+            return ds;
+        });
     }
 
     /**
@@ -96,16 +103,24 @@ class ClarityApi {
      * @returns {Promise<Device[]>}
      */
     listDevices() {
-        if (VERBOSE)
-            console.log(`Listing devices for ${this.org.organizationName}...`);
-
         return request({
             json: true,
             method: 'GET',
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
-            return response.filter((o) => o.lifeStage === 'working');
+            if(process.env.SOURCEID) {
+                response = response.filter(d => d.code == process.env.SOURCEID);
+                console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length}`);
+            }
+            const working = response.filter((o) => o.lifeStage === 'working');
+            if (VERBOSE) {
+                console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
+                response
+                    .filter(d => d.lifeStage !== 'working')
+                    .map(d => console.log(`${d.code} - ${d.lifeStage}`));
+            }
+            return working;
         });
     }
 
@@ -142,7 +157,7 @@ class ClarityApi {
     async *fetchMeasurements(code, since, to) {
         if (VERBOSE)
             console.log(
-                `Fetching measurements for ${this.org.organizationName}/${code}...`
+                `--------------------\nFetching measurements for ${this.org.organizationName}/${code} since ${since} to ${to}`
             );
 
         const limit = 20000;
@@ -156,7 +171,7 @@ class ClarityApi {
 
         while (true) {
             url.searchParams.set('skip', offset);
-            console.log(`Fetching ${url}`);
+            if (VERBOSE) console.log(`Fetching ${url}`);
             const response = await request({
                 url,
                 json: true,
@@ -166,6 +181,12 @@ class ClarityApi {
             });
 
             if (response.statusCode !== 200) {
+                console.warn(`Fetch failed (${response.statusCode}): ${url}`);
+                break;
+            }
+
+            if (offset === 0 && response.body.length === 0) {
+                console.warn(`Fetch failed to return any data: ${code}`);
                 break;
             }
 
@@ -195,14 +216,14 @@ class ClarityApi {
      */
     async sync(supportedMeasurands, since) {
         const devices = await this.listAugmentedDevices();
-
+        if (VERBOSE) console.log(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
         // Create one station per device
         const stations = devices.map((device) =>
             Providers.put_station(
                 this.source.provider,
                 new SensorNode({
                     sensor_node_id: `${this.org.organizationName}-${device.code}`,
-                    sensor_node_site_name: device.name,
+                    sensor_node_site_name: device.name || device.code, // fall back to code when missing name
                     sensor_node_geometry: device.location.coordinates,
                     sensor_node_source_name: this.org.organizationName,
                     sensor_node_ismobile: false,
@@ -226,9 +247,12 @@ class ClarityApi {
             )
         );
 
+        if (VERBOSE) console.debug(`Fetching measurements for ${devices.length} devices`);
         // Sequentially process readings for each device
         const measures = new Measures(FixedMeasure);
+        var successes = 0;
         for (const device of devices) {
+            let hasMeasures = 0;
             const measurements = this.fetchMeasurements(
                 device.code,
                 since.subtract(1.25, 'hour'),
@@ -240,6 +264,7 @@ class ClarityApi {
                 for (const [type, { value }] of readings) {
                     const measurand = supportedMeasurands[type];
                     if (!measurand) continue;
+                    hasMeasures = 1;
                     measures.push({
                         sensor_id: getSensorId(device, measurand),
                         measure: measurand.normalize_value(value),
@@ -247,8 +272,12 @@ class ClarityApi {
                     });
                 }
             }
+            successes += hasMeasures;
         }
 
+        if(successes < devices.length) {
+            console.warn(`There were ${successes} successful requests out of ${devices.length}\n------------------------------`);
+        }
         await Promise.all([
             ...stations,
             Providers.put_measures(this.source.provider, measures)
