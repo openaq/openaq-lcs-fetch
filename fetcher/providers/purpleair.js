@@ -114,7 +114,7 @@ async function fetchSensorData(source, apiKey) {
             'ozone1'
         ].join(',')
     );
-    url.searchParams.append('max_age', 750); // Filter results to only include sensors modified or updated within the last number of seconds.
+    url.searchParams.append('max_age', 75); // Filter results to only include sensors modified or updated within the last number of seconds.
     url.searchParams.append('location_type', 0); // Filter results to only include outdoor sensors.
 
     const { body: { fields, data } } = await request({
