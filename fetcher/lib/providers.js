@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const AWS = require('aws-sdk');
-const { VERBOSE, DRYRUN, gzip, unzip } = require('./utils');
+const {
+    VERBOSE,
+    DRYRUN,
+    gzip,
+    unzip,
+    prettyPrintStation,
+} = require('./utils');
 
 const s3 = new AWS.S3({
     maxRetries: 10
@@ -67,15 +73,19 @@ class Providers {
                 if (VERBOSE) console.log(`station has not changed - station: ${providerStation}`);
                 return;
             }
-            if (VERBOSE) console.log(
-                `Update ${providerStation}\n  from:\n    ${currentData}\n  to:\n    ${newData}`
-            );
+            if (VERBOSE) {
+                console.log(`-------------------------\nUpdate ${providerStation}\n----------------------> to:`);
+                prettyPrintStation(newData);
+                console.log(`-----------------> from`);
+                prettyPrintStation(currentData);
+            }
         } catch (err) {
             if (err.statusCode !== 404) throw err;
         }
 
         const compressedString = await gzip(newData);
         if(!DRYRUN) {
+            if(VERBOSE) console.debug(`Saving station to ${Bucket}/${Key}`);
             await s3.putObject({
                 Bucket,
                 Key,
@@ -83,10 +93,8 @@ class Providers {
                 ContentType: 'application/json',
                 ContentEncoding: 'gzip'
             }).promise();
-        } else {
-            console.log(newData);
         }
-        if (VERBOSE) console.log(`finished station: ${providerStation}`);
+        if (VERBOSE) console.log(`finished station: ${providerStation}\n------------------------`);
     }
 
     /**
@@ -108,6 +116,7 @@ class Providers {
             console.log(`Would have saved ${measures.length} measurements to '${Bucket}/${Key}'`);
             return new Promise((y,n) => y(true));
         }
+        if(VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
         return s3.putObject({
             Bucket,
             Key,

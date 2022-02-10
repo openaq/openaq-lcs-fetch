@@ -269,7 +269,7 @@ class ClarityApi {
         }
 
         if(successes < devices.length) {
-            console.warn(`There were ${successes} successful requests out of ${devices.length}`);
+            console.warn(`There were ${successes} successful requests out of ${devices.length}\n------------------------------`);
         }
         await Promise.all([
             ...stations,
