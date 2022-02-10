@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const AWS = require('aws-sdk');
-const { VERBOSE, gzip, unzip } = require('./utils');
+const { VERBOSE, DRYRUN, gzip, unzip } = require('./utils');
 
 const s3 = new AWS.S3({
     maxRetries: 10
@@ -64,7 +64,7 @@ class Providers {
             const resp = await s3.getObject({ Bucket, Key }).promise();
             const currentData = (await unzip(resp.Body)).toString('utf-8');
             if (currentData === newData) {
-                if (VERBOSE) console.log(`skip - station: ${providerStation}`);
+                if (VERBOSE) console.log(`station has not changed - station: ${providerStation}`);
                 return;
             }
             if (VERBOSE) console.log(
@@ -75,14 +75,18 @@ class Providers {
         }
 
         const compressedString = await gzip(newData);
-        await s3.putObject({
-            Bucket,
-            Key,
-            Body: compressedString,
-            ContentType: 'application/json',
-            ContentEncoding: 'gzip'
-        }).promise();
-        if (VERBOSE) console.log(`ok - station: ${providerStation}`);
+        if(!DRYRUN) {
+            await s3.putObject({
+                Bucket,
+                Key,
+                Body: compressedString,
+                ContentType: 'application/json',
+                ContentEncoding: 'gzip'
+            }).promise();
+        } else {
+            console.log(newData);
+        }
+        if (VERBOSE) console.log(`finished station: ${providerStation}`);
     }
 
     /**
@@ -100,6 +104,10 @@ class Providers {
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
         const Key = `${process.env.STACK}/measures/${provider}/${filename}.csv.gz`;
         const compressedString = await gzip(measures.csv());
+        if(DRYRUN) {
+            console.log(`Would have saved ${measures.length} measurements to '${Bucket}/${Key}'`);
+            return new Promise((y,n) => y(true));
+        }
         return s3.putObject({
             Bucket,
             Key,

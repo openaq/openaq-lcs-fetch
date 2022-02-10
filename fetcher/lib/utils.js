@@ -4,6 +4,7 @@ const request = promisify(require('request'));
 const AWS = require('aws-sdk');
 
 const VERBOSE = !!process.env.VERBOSE;
+const DRYRUN = !!process.env.DRYRUN;
 
 /**
  * Retrieve secret from AWS Secrets Manager
