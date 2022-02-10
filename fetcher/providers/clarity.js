@@ -86,13 +86,13 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/datasources', this.baseUrl)
         }).then((response) => {
-            var ds = response.body;
-            if(process.env.SOURCEID) {
-                ds = ds.filter(d => d.deviceCode == process.env.SOURCEID);
+            let ds = response.body;
+            if (process.env.SOURCEID) {
+                ds = ds.filter((d) => d.deviceCode === process.env.SOURCEID);
             }
             if (VERBOSE) {
                 console.log(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
-                ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.group}`));
+                ds.map((d) => console.log(`${d.deviceCode} - ${d.name} - ${d.group}`));
             }
             return ds;
         });
@@ -109,16 +109,16 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
-            if(process.env.SOURCEID) {
-                response = response.filter(d => d.code == process.env.SOURCEID);
+            if (process.env.SOURCEID) {
+                response = response.filter((d) => d.code === process.env.SOURCEID);
                 console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length}`);
             }
             const working = response.filter((o) => o.lifeStage === 'working');
             if (VERBOSE) {
                 console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
                 response
-                    .filter(d => d.lifeStage !== 'working')
-                    .map(d => console.log(`${d.code} - ${d.lifeStage}`));
+                    .filter((d) => d.lifeStage !== 'working')
+                    .map((d) => console.log(`${d.code} - ${d.lifeStage}`));
             }
             return working;
         });
@@ -250,7 +250,7 @@ class ClarityApi {
         if (VERBOSE) console.debug(`Fetching measurements for ${devices.length} devices`);
         // Sequentially process readings for each device
         const measures = new Measures(FixedMeasure);
-        var successes = 0;
+        let successes = 0;
         for (const device of devices) {
             let hasMeasures = 0;
             const measurements = this.fetchMeasurements(
@@ -275,7 +275,7 @@ class ClarityApi {
             successes += hasMeasures;
         }
 
-        if(successes < devices.length) {
+        if (successes < devices.length) {
             console.warn(`There were ${successes} successful requests out of ${devices.length}\n------------------------------`);
         }
         await Promise.all([

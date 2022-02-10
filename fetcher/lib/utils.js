@@ -58,24 +58,24 @@ function toCamelCase(phrase) {
  * @param {obj} station
  */
 function prettyPrintStation(station) {
-    if(typeof(station)==='string') {
+    if (typeof(station) === 'string') {
         station = JSON.parse(station);
     }
     for (const [key, value] of Object.entries(station)) {
-        if(key !== 'sensor_systems') {
+        if (key !== 'sensor_systems') {
             console.log(`${key}: ${value}`);
         } else {
-            console.log(`Sensor systems`);
-            value.map( ss => {
+            console.log('Sensor systems');
+            value.map( (ss) => {
                 for (const [ky, vl] of Object.entries(ss)) {
-                    if(ky !== 'sensors') {
+                    if (ky !== 'sensors') {
                         console.log(`-- ${ky}: ${vl}`);
                     } else {
-                        vl.map(s => console.debug(`---- ${s.sensor_id} - ${s.measurand_parameter} ${s.measurand_unit}`));
+                        vl.map((s) => console.debug(`---- ${s.sensor_id} - ${s.measurand_parameter} ${s.measurand_unit}`));
                     }
                 }
             });
-        };
+        }
     }
 }
 
@@ -90,5 +90,5 @@ module.exports = {
     unzip,
     VERBOSE,
     DRYRUN,
-    prettyPrintStation,
+    prettyPrintStation
 };

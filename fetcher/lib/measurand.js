@@ -59,7 +59,10 @@ class Measurand {
             } = await request({
                 json: true,
                 method: 'GET',
-                url
+                url: url,
+                headers: {
+                    'User-Agent': 'openaq-lcs-fetch'
+                }
             });
             for (const { name } of results) {
                 supportedMeasurandParameters.push(name);
