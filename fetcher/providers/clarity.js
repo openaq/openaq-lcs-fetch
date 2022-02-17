@@ -92,7 +92,7 @@ class ClarityApi {
             }
             if (VERBOSE) {
                 console.log(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
-                ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.group}`));
+                ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.subscriptionStatus}`));
             }
             return ds;
         });
@@ -110,8 +110,10 @@ class ClarityApi {
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
             if(process.env.SOURCEID) {
-                response = response.filter(d => d.code == process.env.SOURCEID);
-                console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length}`);
+              const sources = process.env.SOURCEID.split(",");
+              const total = response.length;
+              response = response.filter(d => sources.includes(d.code));
+              console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length} of ${total}`);
             }
             const working = response.filter((o) => o.lifeStage === 'working');
             if (VERBOSE) {
@@ -171,7 +173,7 @@ class ClarityApi {
 
         while (true) {
             url.searchParams.set('skip', offset);
-            if (VERBOSE) console.log(`Fetching ${url}`);
+            if (VERBOSE) console.log(`Fetching ${url}&key=${this.apiKey}`);
             const response = await request({
                 url,
                 json: true,
@@ -181,7 +183,7 @@ class ClarityApi {
             });
 
             if (response.statusCode !== 200) {
-                console.warn(`Fetch failed (${response.statusCode}): ${url}`);
+                console.warn(`Fetch failed (${response.statusCode}) ${response.body.Message}: ${url}`);
                 break;
             }
 
@@ -215,7 +217,8 @@ class ClarityApi {
      * @param {Dayjs} since
      */
     async sync(supportedMeasurands, since) {
-        const devices = await this.listAugmentedDevices();
+        // get all the devices, even if expired
+        var devices = await this.listAugmentedDevices();
         if (VERBOSE) console.log(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
         // Create one station per device
         const stations = devices.map((device) =>
@@ -225,6 +228,7 @@ class ClarityApi {
                     sensor_node_id: `${this.org.organizationName}-${device.code}`,
                     sensor_node_site_name: device.name || device.code, // fall back to code when missing name
                     sensor_node_geometry: device.location.coordinates,
+                    sensor_node_status: device.subscriptionStatus,
                     sensor_node_source_name: this.org.organizationName,
                     sensor_node_ismobile: false,
                     sensor_node_deployed_date: device.workingStartAt,
@@ -248,6 +252,8 @@ class ClarityApi {
         );
 
         if (VERBOSE) console.debug(`Fetching measurements for ${devices.length} devices`);
+        // now remove the expired ones
+        devices = devices.filter(d=>d.subscriptionStatus=='active');
         // Sequentially process readings for each device
         const measures = new Measures(FixedMeasure);
         var successes = 0;

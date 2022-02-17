@@ -78,6 +78,8 @@ class Providers {
                 prettyPrintStation(newData);
                 console.log(`-----------------> from`);
                 prettyPrintStation(currentData);
+            } else {
+                console.log(`Updating the station file: ${providerStation}`);
             }
         } catch (err) {
             if (err.statusCode !== 404) throw err;
