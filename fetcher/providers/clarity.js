@@ -119,8 +119,8 @@ class ClarityApi {
             if (VERBOSE) {
                 console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
                 response
-                    .filter(d => d.lifeStage !== 'working')
-                    .map(d => console.log(`${d.code} - ${d.lifeStage}`));
+                    .filter((d) => d.lifeStage !== 'working')
+                    .map((d) => console.log(`${d.code} - ${d.lifeStage}`));
             }
             return working;
         });
@@ -281,7 +281,7 @@ class ClarityApi {
             successes += hasMeasures;
         }
 
-        if(successes < devices.length) {
+        if (successes < devices.length) {
             console.warn(`There were ${successes} successful requests out of ${devices.length}\n------------------------------`);
         }
         await Promise.all([

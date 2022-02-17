@@ -35,14 +35,16 @@ async function processor(source_name, source) {
     const stations = [];
     const measures = new Measures(FixedMeasure);
 
-    if(VERBOSE) console.log(`ok - pulled ${sensorReadings.length} stations`);
+    if (VERBOSE) console.log(`ok - pulled ${sensorReadings.length} stations`);
 
-    if(process.env.SOURCEID) {
-        sensorReadings = sensorReadings.filter(d => d.sensor_index == process.env.SOURCEID);
+    let readings = sensorReadings;
+
+    if (process.env.SOURCEID) {
+        readings = sensorReadings.filter((d) => d.sensor_index === process.env.SOURCEID);
         console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${sensorReadings.length}`);
     }
 
-    for (const reading of sensorReadings) {
+    for (const reading of readings) {
         const system = new SensorSystem();
         const sensorNode = new SensorNode({
             sensor_node_id: reading.sensor_index,
@@ -80,10 +82,10 @@ async function processor(source_name, source) {
     }
 
     await Promise.all(stations);
-    if(VERBOSE) console.log(`ok - all ${stations.length} stations pushed`);
+    if (VERBOSE) console.log(`ok - all ${stations.length} stations pushed`);
 
     await Providers.put_measures(source_name, measures);
-    if(VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
+    if (VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
 }
 
 async function fetchSensorData(source, apiKey) {
