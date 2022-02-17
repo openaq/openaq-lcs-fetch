@@ -10,6 +10,7 @@ class SensorNode {
         this.sensor_node_ismobile = null;
         this.sensor_node_geometry = null;
         this.sensor_node_timezone = null;
+        this.sensor_node_status = null;
         this.sensor_node_reporting_frequency = null;
         this.sensor_node_city = null;
         this.sensor_node_country = null;
@@ -36,6 +37,7 @@ class SensorNode {
             sensor_node_ismobile: this.sensor_node_ismobile,
             sensor_node_geometry: this.sensor_node_geometry,
             sensor_node_timezone: this.sensor_node_timezone,
+            sensor_node_status: this.sensor_node_status,
             sensor_node_reporting_frequency: this.sensor_node_reporting_frequency,
             sensor_node_city: this.sensor_node_city,
             sensor_node_country: this.sensor_node_country,

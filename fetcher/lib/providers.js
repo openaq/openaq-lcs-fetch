@@ -76,16 +76,20 @@ class Providers {
             if (VERBOSE) {
                 console.log(`-------------------------\nUpdate ${providerStation}\n----------------------> to:`);
                 prettyPrintStation(newData);
-                console.log('-----------------> from');
+                console.log(`-----------------> from`);
                 prettyPrintStation(currentData);
+            } else {
+                console.log(`Updating the station file: ${providerStation}`);
             }
         } catch (err) {
             if (err.statusCode !== 404) throw err;
         }
 
         const compressedString = await gzip(newData);
+
         if (!DRYRUN) {
             if (VERBOSE) console.debug(`Saving station to ${Bucket}/${Key}`);
+
             await s3.putObject({
                 Bucket,
                 Key,
@@ -112,11 +116,13 @@ class Providers {
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
         const Key = `${process.env.STACK}/measures/${provider}/${filename}.csv.gz`;
         const compressedString = await gzip(measures.csv());
+
         if (DRYRUN) {
             console.log(`Would have saved ${measures.length} measurements to '${Bucket}/${Key}'`);
             return new Promise((y) => y(true));
         }
         if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
+
         return s3.putObject({
             Bucket,
             Key,
