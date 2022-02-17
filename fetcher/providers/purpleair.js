@@ -23,7 +23,7 @@ const lookup = {
 };
 
 async function processor(source_name, source) {
-    var [
+    const [
         measurands,
         sensorReadings
     ] = await Promise.all([
@@ -116,13 +116,13 @@ async function fetchSensorData(source, apiKey) {
             'ozone1'
         ].join(',')
     );
-  // if we are looking for a specific sourceid lets not limit
-  if(!process.env.SOURCEID) {
-    // Filter results to only include sensors modified or updated within the last number of seconds.
-    url.searchParams.append('max_age', 75);
-    // Filter results to only include outdoor sensors.
-    url.searchParams.append('location_type', 0);
-  }
+    // if we are looking for a specific sourceid lets not limit
+    if (!process.env.SOURCEID) {
+        // Filter results to only include sensors modified or updated within the last number of seconds.
+        url.searchParams.append('max_age', 75);
+        // Filter results to only include outdoor sensors.
+        url.searchParams.append('location_type', 0);
+    }
 
     const { body: { fields, data } } = await request({
         json: true,

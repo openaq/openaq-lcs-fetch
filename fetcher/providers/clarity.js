@@ -86,13 +86,14 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/datasources', this.baseUrl)
         }).then((response) => {
-            var ds = response.body;
-            if(process.env.SOURCEID) {
-                ds = ds.filter(d => d.deviceCode == process.env.SOURCEID);
+            let ds = response.body;
+
+            if (process.env.SOURCEID) {
+                ds = ds.filter((d) => d.deviceCode === process.env.SOURCEID);
             }
             if (VERBOSE) {
                 console.log(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
-                ds.map(d => console.log(`${d.deviceCode} - ${d.name} - ${d.subscriptionStatus}`));
+                ds.map((d) => console.log(`${d.deviceCode} - ${d.name} - ${d.subscriptionStatus}`));
             }
             return ds;
         });
@@ -109,11 +110,11 @@ class ClarityApi {
             headers: { 'X-API-Key': this.apiKey },
             url: new URL('v1/devices', this.baseUrl)
         }).then((response) => response.body).then((response) => {
-            if(process.env.SOURCEID) {
-              const sources = process.env.SOURCEID.split(",");
-              const total = response.length;
-              response = response.filter(d => sources.includes(d.code));
-              console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length} of ${total}`);
+            if (process.env.SOURCEID) {
+                const sources = process.env.SOURCEID.split(',');
+                const total = response.length;
+                response = response.filter((d) => sources.includes(d.code));
+                console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length} of ${total}`);
             }
             const working = response.filter((o) => o.lifeStage === 'working');
             if (VERBOSE) {
@@ -218,7 +219,7 @@ class ClarityApi {
      */
     async sync(supportedMeasurands, since) {
         // get all the devices, even if expired
-        var devices = await this.listAugmentedDevices();
+        let devices = await this.listAugmentedDevices();
         if (VERBOSE) console.log(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
         // Create one station per device
         const stations = devices.map((device) =>
@@ -253,10 +254,10 @@ class ClarityApi {
 
         if (VERBOSE) console.debug(`Fetching measurements for ${devices.length} devices`);
         // now remove the expired ones
-        devices = devices.filter(d=>d.subscriptionStatus=='active');
+        devices = devices.filter((d)=>d.subscriptionStatus === 'active');
         // Sequentially process readings for each device
         const measures = new Measures(FixedMeasure);
-        var successes = 0;
+        let successes = 0;
         for (const device of devices) {
             let hasMeasures = 0;
             const measurements = this.fetchMeasurements(

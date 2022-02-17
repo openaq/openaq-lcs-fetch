@@ -76,7 +76,7 @@ class Providers {
             if (VERBOSE) {
                 console.log(`-------------------------\nUpdate ${providerStation}\n----------------------> to:`);
                 prettyPrintStation(newData);
-                console.log(`-----------------> from`);
+                console.log('-----------------> from');
                 prettyPrintStation(currentData);
             } else {
                 console.log(`Updating the station file: ${providerStation}`);
