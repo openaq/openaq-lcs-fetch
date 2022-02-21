@@ -16,6 +16,8 @@ const s3 = new AWS.S3({
 const { Storage } = require('@google-cloud/storage');
 
 const VERBOSE = !!process.env.VERBOSE;
+const DRYRUN = !!process.env.DRYRUN;
+
 // global storage object
 var storage;
 
@@ -25,6 +27,8 @@ const revokeCredentials = () => {
 
 const applyCredentials = credentials => {
   if(!storage && credentials) {
+    if (!credentials.client_email) throw new Error('client_email required');
+    if (!credentials.client_id) throw new Error('client_id required');
     console.debug(`Initializing storage object '${credentials.project_id}' as ${credentials.client_email}`);
     let projectId = credentials.project_id;
     // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
@@ -42,15 +46,18 @@ const applyCredentials = credentials => {
  * @returns {object}
  */
 async function fetchSecret(source_name) {
+
+  const region = process.env.AWS_DEFAULT_REGION || 'us-west-2';
+  const stack = process.env.SECRET_STACK || process.env.STACK;
+  const SecretId = `${stack}/${source_name}`;
+  // make sure we have a stack name
+  if (!stack) throw new Error('STACK Env Var Required');
+
   const secretsManager = new AWS.SecretsManager({
-    region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
+    region,
   });
 
-  if (!process.env.STACK) throw new Error('STACK Env Var Required');
-
-  const SecretId = `${process.env.SECRET_STACK || process.env.STACK}/${source_name}`;
-
-  if (VERBOSE) console.debug(`Fetching secret - ${SecretId}...`);
+  if (VERBOSE) console.debug(`Fetching secret - ${region}/${SecretId}...`);
 
   const { SecretString } = await secretsManager.getSecretValue({
     SecretId
@@ -95,24 +102,40 @@ const putObject = async (data, Key) => {
     data = await gzip(data);
   }
 
-  await s3.putObject({
-    Bucket,
-    Key,
-    Body: data,
-    ContentType,
-    ContentEncoding: 'gzip',
-  }).promise().catch( err => {
-    console.log('error putting object', err);
-  });
+  if(!DRYRUN) {
+    if (VERBOSE) console.debug(`Saving data to ${Key}`);
+    await s3.putObject({
+      Bucket,
+      Key,
+      Body: data,
+      ContentType,
+      ContentEncoding: 'gzip',
+    }).promise().catch( err => {
+      console.log('error putting object', err);
+    });
+  } else {
+    if (VERBOSE) console.debug(`Would have saved data to ${Key}`);
+    await writeJson(data, Key);
+  }
 };
 
 const writeJson = async (data, filepath) => {
-  console.debug('writing data to text', filepath);
-  const jsonString = path.extname(filepath) === ".gz"
-        ? await gzip(JSON.stringify(data))
-        : JSON.stringify(data);
+  const dir = process.env.LOCAL_DIR || __dirname;
+  if (VERBOSE) console.debug('writing data to local directory', dir, filepath);
+  let jsonString = data;
+  if(typeof(data) == 'object' && !Buffer.isBuffer(data)) {
+    jsonString = path.extname(filepath) === ".gz"
+      ? await gzip(JSON.stringify(data))
+      : JSON.stringify(data);
+  }
   //await fs.promises.writeFile(filepath, jsonString);
-  fs.writeFileSync(filepath, jsonString);
+  const fullpath = path.join(dir, filepath);
+  fs.promises.mkdir(path.dirname(fullpath), {recursive: true})
+    .then( res => {
+      fs.writeFileSync(fullpath, jsonString);
+    }).catch( err => {
+      console.warn(err);
+    });
   return true;
 };
 
@@ -158,28 +181,34 @@ const listFilesGoogleBucket = async config => {
   const f = [];
 
   const options = {
-	  prefix: 'pending/',
+	  prefix: process.env.PENDING_DIR || 'pending/',
 	  delimeter: '/',
   };
 
-  console.debug(`Fetching file list from '${bucket}'`);
+  if (VERBOSE) console.debug(`Fetching file list from '${bucket}/${options.prefix}'`);
   const [files] = await storage.bucket(bucket).getFiles(options);
 
   files.forEach(file => {
-	  f.push({
-      source: 'google-bucket',
-	    path: file.name,
-	    name: path.basename(file.name),
-	    id: file.id,
-	    bucket,
-	  });
+    if(!file.name.endsWith('/')) {
+      if (VERBOSE) console.debug('listing file', file.name);
+	    f.push({
+        source: 'google-bucket',
+	      path: file.name,
+	      name: path.basename(file.name),
+	      id: file.id,
+	      bucket,
+	    });
+    } else {
+      if (VERBOSE) console.debug('Skipping directory path', file.name);
+    }
   });
   return f;
 };
 
 const listFilesLocal = async (config) => {
+  const dir = process.env.LOCAL_DIR || __dirname;
   const { directory } = config;
-  const directoryPath = path.join(__dirname, directory, 'staging/pending');
+  const directoryPath = path.join(dir, directory, 'staging/pending');
   const list = await readdir(directoryPath);
   const files = list.map( filename => ({
     source: 'local',
@@ -244,8 +273,10 @@ const fetchFileGoogleBucket = file => {
 
 const moveFile = async (file, destDirectory) => {
   const source = file.source;
-  console.debug(`Moving file to ${destDirectory}`, file);
-  if(source == 'google-bucket') {
+  if (VERBOSE) console.debug(`Moving file to ${destDirectory}`, file, DRYRUN);
+  if (DRYRUN) {
+    return file;
+  } else if(source == 'google-bucket') {
 	  return await moveFileGoogleBucket(file, destDirectory);
   } else {
 	  return await moveFileLocal(file, destDirectory);
@@ -253,7 +284,7 @@ const moveFile = async (file, destDirectory) => {
 };
 
 const moveFileGoogleBucket = async (file, destDirectory) => {
-  console.debug(`Moving google file to ${destDirectory}`, file);
+  if (VERBOSE) console.debug(`Moving google file to ${destDirectory}`, file);
   const dest = path.join(destDirectory, file.name);
   await storage.bucket(file.bucket).file(file.path).move(dest);
   file.path = dest;
@@ -294,12 +325,41 @@ function toCamelCase(phrase) {
         .join('');
 }
 
+
+/**
+ * Print out JSON station object
+ * @param {obj} station
+ */
+function prettyPrintStation(station) {
+    if (typeof(station) === 'string') {
+        station = JSON.parse(station);
+    }
+    for (const [key, value] of Object.entries(station)) {
+        if (key !== 'sensor_systems') {
+            console.log(`${key}: ${value}`);
+        } else {
+            console.log('Sensor systems');
+            value.map( (ss) => {
+                for (const [ky, vl] of Object.entries(ss)) {
+                    if (ky !== 'sensors') {
+                        console.log(`-- ${ky}: ${vl}`);
+                    } else {
+                        vl.map((s) => console.debug(`---- ${s.sensor_id} - ${s.measurand_parameter} ${s.measurand_unit}`));
+                    }
+                }
+            });
+        }
+    }
+}
+
+
 module.exports = {
   fetchSecret,
   applyCredentials,
   revokeCredentials,
   request,
   VERBOSE,
+  DRYRUN,
   putObject,
   getObject,
   moveFile,
@@ -310,4 +370,5 @@ module.exports = {
   toCamelCase,
   gzip,
   unzip,
+  prettyPrintStation,
 };

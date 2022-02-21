@@ -120,12 +120,13 @@ async function processor(source) {
 
   if(credentials) {
     // add the credentials to the source config
+    if (VERBOSE) console.debug("Secret credentials", credentials);
     source.config.credentials = credentials;
   }
 
   // First we need to get the list of files to process
   const files = await listFiles(source);
-  console.debug(`Processing ${files.length} files for ${source.name}`);
+  if (VERBOSE) console.debug(`Processing ${files.length} files for ${source.name}`);
 
   // Next we are going to loop through them and
   // read them in as a json array
@@ -137,17 +138,17 @@ async function processor(source) {
   }));
 
   // now we should put the stations, sensors and versions
-  console.debug(`Saving ${Object.keys(stations).length} station(s)`);
+  if (VERBOSE) console.debug(`Saving ${Object.keys(stations).length} station(s)`);
   Object.values(stations).map(s => {
     s.put();
   });
 
-  console.debug(`Saving ${Object.keys(versions).length} version(s)`);
+  if (VERBOSE) console.debug(`Saving ${Object.keys(versions).length} version(s)`);
   Object.values(versions).map(v => {
     v.put();
   });
 
-  console.debug(`Saving ${measures_list.length} set(s) of measurements`);
+  if (VERBOSE) console.debug(`Saving ${measures_list.length} set(s) of measurements`);
   Object.values(measures_list).map(m => {
     m.put();
   });
@@ -165,7 +166,7 @@ async function processor(source) {
  * @returns {??}
  */
 async function processFile({ file, data, measurands }) {
-  console.debug('Processing file', file.path);
+  if (VERBOSE) console.debug('Processing file', file.path);
   const measures = new Measures(FixedMeasure, file);
   const sourceId = 'versioning';
 
