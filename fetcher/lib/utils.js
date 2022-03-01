@@ -87,7 +87,6 @@ const getObject = async (Key) => {
 const putObject = async (data, Key) => {
   const Bucket = process.env.BUCKET;
   var ContentType = 'application/json';
-  //console.debug('PUTTING OBJECT',  data.constructor.name, `${Bucket}/${Key}`);
 
   if(data.constructor.name === 'Object') {
     data = JSON.stringify(data);
@@ -120,7 +119,7 @@ const putObject = async (data, Key) => {
 };
 
 const writeJson = async (data, filepath) => {
-  const dir = process.env.LOCAL_DIR || __dirname;
+  const dir = process.env.LOCAL_DESTINATION_BUCKET || __dirname;
   if (VERBOSE) console.debug('writing data to local directory', dir, filepath);
   let jsonString = data;
   if(typeof(data) == 'object' && !Buffer.isBuffer(data)) {
@@ -181,7 +180,7 @@ const listFilesGoogleBucket = async config => {
   const f = [];
 
   const options = {
-	  prefix: process.env.PENDING_DIR || 'pending/',
+	  prefix: config.prefix || 'pending/',
 	  delimeter: '/',
   };
 
@@ -206,9 +205,9 @@ const listFilesGoogleBucket = async config => {
 };
 
 const listFilesLocal = async (config) => {
-  const dir = process.env.LOCAL_DIR || __dirname;
-  const { directory } = config;
-  const directoryPath = path.join(dir, directory, 'staging/pending');
+  const dir = process.env.LOCAL_SOURCE_BUCKET || __dirname;
+  const { folder } = config;
+  const directoryPath = path.join(dir, folder);
   const list = await readdir(directoryPath);
   const files = list.map( filename => ({
     source: 'local',
@@ -239,6 +238,7 @@ const fetchFile = async file => {
 const fetchFileLocal = async file => {
   const filepath = file.path;
   const data = [];
+  //console.log(file)
   return new Promise((resolve, reject) => {
 	  fs.createReadStream(filepath)
       .pipe(csv())
@@ -297,15 +297,6 @@ const moveFileLocal = async (file, destDirectory) => {
   return file;
 };
 
-
-
-const getFile = async (Key) => {
-  const Bucket = process.env.BUCKET;
-};
-
-const putFile = async (data, filepath) => {
-  const Bucket = process.env.BUCKET;
-};
 
 /**
  * Transform phrase to camel case.

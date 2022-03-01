@@ -1,7 +1,8 @@
 
 const {
   getObject,
-  putObject
+  putObject,
+  VERBOSE,
 } = require('./utils');
 
 
@@ -48,7 +49,7 @@ class SensorNode {
       const k = this.map[key] || key;
       if(k) this[k] = value;
     }
-    console.debug('Created new sensor node', this.sensor_node_id);
+    if (VERBOSE) console.debug('Created new sensor node', this.sensor_node_id);
   }
 
   addSensor(obj) {
@@ -98,7 +99,7 @@ class SensorNode {
 
   async get() {
     const key = this.key();
-    if(!this.stored) {
+    if(!this.stored && !process.env.DRYRUN) {
       this.stored = await getObject(key);
     }
     return this.stored;
@@ -106,7 +107,6 @@ class SensorNode {
 
   async put() {
     const key = this.key();
-    //console.debug('PUTTING SENSOR NODE', key);
     const current = this.get();
     // make sure its different first
     // if(this.different()) {
@@ -217,7 +217,7 @@ class Version {
     this.provider = null;
     this.stored = null;
 	  Object.assign(this, p);
-    //console.debug('Created new version', this.sensor_id);
+    if (VERBOSE) console.debug('Created new version', this.sensor_id);
   }
 
   different(obj) {
@@ -257,7 +257,7 @@ class Version {
 
   async get() {
     const key = this.key();
-    if(!this.stored) {
+    if(!this.stored && !process.env.DRYRUN) {
       this.stored = await getObject(key);
     }
     return this.stored;
