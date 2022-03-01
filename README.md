@@ -78,7 +78,6 @@ The first step for a new source is to add JSON config file to the the `fetcher/s
     "pm25": ["pm25", "ppm"],
     ...
    }
-  "
 }
 ```
 
@@ -151,3 +150,12 @@ The should look something like the following and be stored in its entirety withi
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/service-account-email"
 }
 ```
+
+### Deploying
+
+The deployment method (app.ts) is written to be dynamic and pull from the environmental variables to determine what gets deployed. There are 4 variable that can be modified when deploying:
+
+`STACK`: used as the id for the stack
+`BUCKET`: defines the ingest bucket
+`API_URL`: the url to the api to use
+`DEPLOYED_SOURCES`: a comma separated string that lists the sources that should be included in the deployment. Leaving this blank will deploy all sources. Names in the string must match the names in the source config files.
