@@ -40,7 +40,7 @@ Development configuration adds the following variables
 
 ### Running locally
 
-To run the ingestion script locally (useful for testing without deploying), see the following example:
+When running locally you may either use a `.env` file or pass the variables in directly see as in the following example:
 
 ```sh
 API_URL=https://api.openaq.org \
@@ -52,6 +52,12 @@ VERBOSE=1 \
 DRYRUN=1 \
 node fetcher/index.js
 ```
+
+You may also specify a specific `.env` file. For example, to load `.env.local` you would run
+```sh
+ENV=local node fetcher/index.js
+```
+
 
 ## Data Sources
 
@@ -82,12 +88,12 @@ The first step for a new source is to add JSON config file to the the `fetcher/s
 ```
 
 Attributes
-`name`: A unique name for reference
-`provider`: The provider script to use
-`frequency`: How often to run the source
-`type`: the source location type. Currently supports `google-bucket` and local
-`config`: Any config parameters needed for the source location
-`parameters`: A list of accepted measurands and their mapped value and units
+- `name`: A unique name for reference
+- `provider`: The provider script to use
+- `frequency`: How often to run the source
+- `type`: the source location type. Currently supports `google-bucket` and local
+- `config`: Any config parameters needed for the source location
+- `parameters`: A list of accepted measurands and their mapped value and units
 
 The config file can contain any properties that should be configurable via the
 provider script. The above table however outlines the attributes that are required.
@@ -155,7 +161,7 @@ The should look something like the following and be stored in its entirety withi
 
 The deployment method (app.ts) is written to be dynamic and pull from the environmental variables to determine what gets deployed. There are 4 variable that can be modified when deploying:
 
-`STACK`: used as the id for the stack
-`BUCKET`: defines the ingest bucket
-`API_URL`: the url to the api to use
-`DEPLOYED_SOURCES`: a comma separated string that lists the sources that should be included in the deployment. Leaving this blank will deploy all sources. Names in the string must match the names in the source config files.
+- `STACK`: used as the id for the stack
+- `BUCKET`: defines the ingest bucket
+- `API_URL`: the url to the api to use
+- `DEPLOYED_SOURCES`: a comma separated string that lists the sources that should be included in the deployment. Leaving this blank will deploy all sources. Names in the string must match the names in the source config files.
