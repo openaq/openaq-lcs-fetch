@@ -33,7 +33,7 @@ async function handler(event) {
       );
       await providers.processor(source);
 
-        return {};
+      return {};
     } catch (err) {
         console.error(err);
         process.exit(1);

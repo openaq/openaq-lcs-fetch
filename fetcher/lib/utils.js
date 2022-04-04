@@ -7,7 +7,10 @@ const unzip = promisify(zlib.unzip);
 const path = require('path');
 const fs = require('fs');
 const csv = require('csv-parser');
+//const stripBomStream = import('strip-bom-stream');
 const readdir = promisify(fs.readdir);
+const mv = promisify(fs.rename);
+
 
 const s3 = new AWS.S3({
   maxRetries: 10
@@ -65,6 +68,7 @@ async function fetchSecret(source_name) {
         .catch( err => {
           // this is a stop gap until there is a way to say there is
           // nothing to lookup
+          if (VERBOSE) console.debug(err);
           return { SecretString: '{}' };
         });
 
@@ -208,6 +212,7 @@ const listFilesLocal = async (config) => {
   const dir = process.env.LOCAL_SOURCE_BUCKET || __dirname;
   const { folder } = config;
   const directoryPath = path.join(dir, folder);
+  if (VERBOSE) console.debug(`Fetching local file list from '${directoryPath}'`);
   const list = await readdir(directoryPath);
   const files = list.map( filename => ({
     source: 'local',
@@ -239,8 +244,10 @@ const fetchFileLocal = async file => {
   const filepath = file.path;
   const data = [];
   //console.log(file)
+  const stripBomStream = await import('strip-bom-stream');
   return new Promise((resolve, reject) => {
 	  fs.createReadStream(filepath)
+      .pipe(stripBomStream.default())
       .pipe(csv())
       .on('data', row => data.push(row))
       .on('end', () => {
@@ -249,13 +256,15 @@ const fetchFileLocal = async file => {
   });
 };
 
-const fetchFileGoogleBucket = file => {
+const fetchFileGoogleBucket = async file => {
   const data = [];
+  const stripBomStream = await import('strip-bom-stream');
   return new Promise((resolve, reject) => {
     storage
 	    .bucket(file.bucket)
 	    .file(file.path)
 	    .createReadStream() //stream is created
+      .pipe(stripBomStream.default())
       .pipe(csv())
       .on('data', row => data.push(row))
       .on('end', () => {
@@ -273,7 +282,6 @@ const fetchFileGoogleBucket = file => {
 
 const moveFile = async (file, destDirectory) => {
   const source = file.source;
-  if (VERBOSE) console.debug(`Moving file to ${destDirectory}`, file, DRYRUN);
   if (DRYRUN) {
     return file;
   } else if(source == 'google-bucket') {
@@ -292,8 +300,43 @@ const moveFileGoogleBucket = async (file, destDirectory) => {
 };
 
 const moveFileLocal = async (file, destDirectory) => {
+  const orig = file.path;
+  destDirectory = path.join(path.dirname(path.dirname(file.path)), destDirectory);
   const dest = path.join(destDirectory, file.name);
+  if (VERBOSE) console.debug(`Moving local file to ${dest}`);
+  await mv(orig, dest);
   file.path = dest;
+  return file;
+};
+
+
+const writeError = async (file) => {
+  const source = file.source;
+  // rename the file for the error
+  const parsed = path.parse(file.path);
+  const dir = path.dirname(parsed.dir);
+  file.path = `${dir}/errors/${parsed.name}_error.txt`;
+
+  if (DRYRUN) {
+    return file;
+  } else if(source == 'google-bucket') {
+	  return await writeErrorGoogleBucket(file);
+  } else {
+	  return await writeErrorLocal(file);
+  }
+};
+
+const writeErrorGoogleBucket = async (file) => {
+  if (VERBOSE) console.debug(`Writing google error to ${file.path}`, file);
+  //const dest = path.join(destDirectory, file.name);
+  const path = file.path.replace('./','');
+  await storage.bucket(file.bucket).file(path).save(file.error);
+  return file;
+};
+
+const writeErrorLocal = async (file) => {
+  if (VERBOSE) console.debug(`Writing local error to ${file.path}`);
+  fs.writeFileSync(file.path, file.error);
   return file;
 };
 
@@ -358,6 +401,7 @@ module.exports = {
   listFiles,
   readJson,
   writeJson,
+  writeError,
   toCamelCase,
   gzip,
   unzip,

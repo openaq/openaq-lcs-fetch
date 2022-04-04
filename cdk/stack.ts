@@ -99,7 +99,7 @@ export class EtlPipeline extends cdk.Stack {
         sources: Source[];
     }): lambda.Function[] {
         const durations: Record<Interval, cdk.Duration> = {
-            minute: cdk.Duration.minutes(1),
+            minute: cdk.Duration.minutes(5),
             hour: cdk.Duration.hours(1),
             day: cdk.Duration.days(1),
         };

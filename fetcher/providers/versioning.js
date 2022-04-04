@@ -41,6 +41,7 @@ const {
   listFiles,
   fetchFile,
   moveFile,
+  writeError,
 } = require('../lib/utils');
 
 
@@ -132,9 +133,19 @@ async function processor(source) {
   // read them in as a json array
   await Promise.all(files.map( async (file) => {
 	  const data = await fetchFile(file);
-	  const res = await processFile({ file, data, measurands });
-	  moveFile(file, 'processed');
-	  return res;
+	  return processFile({ file, data, measurands })
+      .then( res => {
+	      moveFile(file, 'processed');
+        return res;
+      })
+      .catch( err => {
+        console.error(`File processing error: ${err.message}`);
+        writeError({
+          ...file,
+          error: `**FILE ERROR**\nFILE: ${file.path}\nDETAILS: ${err.message}`,
+        });
+	      moveFile(file, 'errors');
+      });
   }));
 
   // now we should put the stations, sensors and versions
@@ -178,6 +189,8 @@ async function processFile({ file, data, measurands }) {
   // based on the fields that are available in the array/row
   for(const row of data) {
     // every row we encounter has to include the station/location info
+    if(!row.location) throw new Error('No location field found');
+    if (VERBOSE) console.log(`Processing location: ${row.location}`, row);
     let sensorNodeId = row.location;
     let station = stations[sensorNodeId];
 

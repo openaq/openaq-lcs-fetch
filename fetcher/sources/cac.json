@@ -5,7 +5,8 @@
   "frequency": "minute",
   "type": "google-bucket",
   "config" : {
-    "bucket":"openaq-staging"
+    "bucket":"openaq-staging",
+    "folder":"pending"
   },
   "parameters": {
     "co": ["co", "ppb"],
