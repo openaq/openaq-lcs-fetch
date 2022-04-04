@@ -59,7 +59,7 @@ async function processor(source_name, source) {
     for (const reading of readings) {
         const sensorNode = new SensorNode({
             sensor_node_id: `senstate-${reading.token}`,
-            sensor_node_source_name: `${reading.attribution.name} ${reading.attribution.url}`,
+            sensor_node_source_name: `${source_name}`,
             sensor_node_site_name: reading.name,
             sensor_node_geometry: [reading.coordinates.longitude, reading.coordinates.latitude],
             sensor_node_city: reading.city,

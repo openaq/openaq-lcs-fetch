@@ -230,7 +230,8 @@ class ClarityApi {
                     sensor_node_site_name: device.name || device.code, // fall back to code when missing name
                     sensor_node_geometry: device.location.coordinates,
                     sensor_node_status: device.subscriptionStatus,
-                    sensor_node_source_name: this.org.organizationName,
+                    sensor_node_source_name: this.source.provider, //
+                    sensor_node_site_description: this.org.organizationName,
                     sensor_node_ismobile: false,
                     sensor_node_deployed_date: device.workingStartAt,
                     sensor_system: new SensorSystem({
