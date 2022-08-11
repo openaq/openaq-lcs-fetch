@@ -79,6 +79,34 @@ function prettyPrintStation(station) {
     }
 }
 
+/**
+* Make some simple, standard data checks before submitting the file
+* @param {array} data
+* @param {timestamp} start_timestamp
+* @param {timestamp} end_timestamp
+*/
+function checkResponseData(data, start_timestamp, end_timestamp) {
+  const n = data && data.length;
+  if(!n) return [];
+  // no future data as default, obviously requres UTC
+  if(!end_timestamp) {
+    end_timestamp = Math.round(Date.now()/1000);
+  }
+  // filter down to the requested period
+  const fdata = data.filter(d => {
+    return (d.time/1000 >= start_timestamp || !start_timestamp) && d.time/1000 <= end_timestamp;
+  });
+  if(fdata.length < n) {
+    // submit warning so we can track this
+    const requested_start = new Date(start_timestamp*1000).toISOString();
+    const returned_start = new Date(data[0].time).toISOString();
+    const requested_end = new Date(end_timestamp*1000).toISOString();
+    const returned_end = new Date(data[n-1].time).toISOString();
+    console.warn(`API returned more data than requested: requested: ${requested_start} > ${requested_end}, returned: ${returned_start} > ${returned_end}`);
+  }
+  return fdata;
+}
+
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 
@@ -90,6 +118,6 @@ module.exports = {
     unzip,
     VERBOSE,
     DRYRUN,
-    prettyPrintStation
-
+  prettyPrintStation,
+  checkResponseData,
 };

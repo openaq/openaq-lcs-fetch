@@ -4,7 +4,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure, MobileMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { request } = require('../lib/utils');
+const { request, checkResponseData } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -104,6 +104,7 @@ async function process_mobile_locations(source_name, source, measurands) {
             system.sensors.push(sensor);
 
             const measurements = await mobile_measures(source, station_id);
+
             for (const measurement of measurements) {
                 measures.push(new MobileMeasure({
                     sensor_id,
@@ -126,7 +127,7 @@ async function process_mobile_locations(source_name, source, measurands) {
 
 async function fixed_locations(source) {
     const params = {
-        time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
+      time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
         time_to: String(Math.round(Date.now() / 1000)),
         tags: '',
         usernames: '',
@@ -137,7 +138,7 @@ async function fixed_locations(source) {
 
     const url = new URL('/api/fixed/active/sessions.json', source.meta.url);
     url.searchParams.append('q', JSON.stringify(params));
-
+    //console.log(url.href)
     const res = await request({
         json: true,
         method: 'GET',
@@ -148,8 +149,10 @@ async function fixed_locations(source) {
 }
 
 async function mobile_measures(source, station_id) {
-    const url = new URL('/api/measurements.json', source.meta.url);
-    url.searchParams.append('start_time', Math.round(Date.now() / 1000) - 60 * 2);
+  const url = new URL('/api/measurements.json', source.meta.url);
+  const start_time = Math.round(Date.now() / 1000) - 60 * 2;
+  const end_time = Math.round(Date.now() / 1000);
+    url.searchParams.append('start_time', start_time);
     url.searchParams.append('stream_ids', station_id);
 
     const res = await request({
@@ -158,7 +161,7 @@ async function mobile_measures(source, station_id) {
         url: url
     });
 
-    return res.body;
+  return checkResponseData(res.body, start_time, end_time);
 }
 
 async function mobile_locations(source) {

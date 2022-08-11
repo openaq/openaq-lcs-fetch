@@ -1,3 +1,6 @@
+const path = process.env.ENV ? `.env.${process.env.ENV}` : '.env';
+require('dotenv').config({ path });
+
 const providers = new (require('./lib/providers'))();
 const sources = require('./sources');
 
