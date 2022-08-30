@@ -46,13 +46,14 @@ class Measurand {
     static async getSupportedMeasurands(lookups) {
       // Fetch from API
       const supportedMeasurandParameters = [];
-      const url = new URL('/v2/parameters', process.env.API_URL || 'https://api.openaq.org');
-        let morePages;
-        let page = 1;
+      const baseurl = new URL('/v2/parameters', process.env.API_URL || 'https://api.openaq.org');
+      if (VERBOSE) console.debug(`Getting Supported Measurands - ${baseurl}`);
+      let morePages;
+      let page = 1;
         do {
             const url = new URL(
               '/v2/parameters',
-              process.env.LCS_API || 'https://api.openaq.org'
+              baseurl,
             );
           url.searchParams.append('page', page++);
           const {
@@ -62,6 +63,9 @@ class Measurand {
             method: 'GET',
             url
           });
+
+          if(!results) throw new Error(`Could not connect to ${baseurl}`);
+
           for (const { name } of results) {
             supportedMeasurandParameters.push(name);
           }
@@ -69,7 +73,7 @@ class Measurand {
         } while (morePages);
         if (VERBOSE)
             console.debug(
-              `Fetched ${supportedMeasurandParameters.length} supported measurement parameters.`
+              `Fetched ${supportedMeasurandParameters.length} supported measurement parameters from ${baseurl}.`
             );
 
       // Filter provided lookups

@@ -6,7 +6,7 @@
   "type": "google-bucket",
   "config" : {
     "bucket":"openaq-talloaks-bucket",
-    "directory": "../../../openaq-api-v2/openaq_fastapi/openaq_fastapi/ingest/testdata"
+    "folder":"pending"
   },
   "parameters": {
     "co": ["co", "ppb"],

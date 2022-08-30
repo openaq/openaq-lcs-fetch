@@ -24,28 +24,40 @@ yarn test
 
 ### Env Variables
 
-Configuration for the ingestion is provided via environment variables.
+Production configuration for the ingestion is provided via environment variables.
 
-- `BUCKET`: The bucket to which the ingested data should be written. **Required**
-- `SOURCE`: The [data source](#data-sources) to ingest. **Required**
-- `LCS_API`: The API used when fetching supported measurands. _Default: `'https://api.openaq.org'`_
-- `STACK`: The stack to which the ingested data should be associated. This is mainly used to apply a prefix to data uploaded to S3 in order to separate it from production data. _Default: `'local'`_
-- `SECRET_STACK`: The stack to which the used [Secrets](#provider-secrets) are associated. At times, a developer may want to use credentials relating to a different stack (e.g. a devloper is testing the script, they want output data uploaded to the `local` stack but want to use the production stack's secrets). _Default: the value from the `STACK` env variable_
+- `BUCKET`: The bucket to which the data to be ingested should be written. **Required**
+- `API_URL`: The API used when fetching supported measurands. _Default: `'https://api.openaq.org'`_
+- `STACK`: The stack to which the ingested data should be associated. This is mainly used to apply a prefix to data uploaded to S3 in order to separate it from production data and to pull secrets down. _Default: `'local'`_
+
+Development configuration adds the following variables
+- `SOURCE`: The [data source](#data-sources) to ingest. This is provided from the file object in production but required to be set during development. Do not set this variable in production. **Required**
+- `SOURCE_TYPE`: This will override the type value set in the source config
+- `LOCAL_SOURCE_BUCKET`: This is (most likely) the path to use when pulling files from a local directory. Very helpful as you are setting up a new source.
+- `LOCAL_DESTINATION_BUCKET`: The local path to save the transformed files. Also helpful when debugging pipelines.
+- `DRYRUN`: If set to truthy it will prevent any upload or moving of files but stil allow you to get them.
 - `VERBOSE`: Enable verbose logging. _Default: disabled_
 
 ### Running locally
 
-To run the ingestion script locally (useful for testing without deploying), see the following example:
+When running locally you may either use a `.env` file or pass the variables in directly see as in the following example:
 
 ```sh
-LCS_API=https://api.openaq.org \
+API_URL=https://api.openaq.org \
+SOURCE=cac \
+SOURCE_TYPE=local \
 STACK=my-dev-stack \
-SECRET_STACK=my-prod-stack \
 BUCKET=openaq-fetches \
 VERBOSE=1 \
-SOURCE=habitatmap \
+DRYRUN=1 \
 node fetcher/index.js
 ```
+
+You may also specify a specific `.env` file. For example, to load `.env.local` you would run
+```sh
+ENV=local node fetcher/index.js
+```
+
 
 ## Data Sources
 
@@ -58,17 +70,30 @@ The first step for a new source is to add JSON config file to the the `fetcher/s
 
 ```json
 {
+  "name": "cac",
   "schema": "v1",
-  "provider": "example",
+  "provider": "versioning",
   "frequency": "hour",
-  "meta": {}
+  "type": "google-bucket",
+  "config": {
+    "bucket": "name-of-bucket",
+    "folder": "path/to/files",
+    ...
+  },
+  "parameters": {
+    "pm25": ["pm25", "ppm"],
+    ...
+   }
 }
 ```
 
-| Attribute   | Note                       |
-| ----------- | -------------------------- |
-| `provider`  | Unique provider name       |
-| `frequency` | `day`, `hour`, or `minute` |
+Attributes
+- `name`: A unique name for reference
+- `provider`: The provider script to use
+- `frequency`: How often to run the source
+- `type`: the source location type. Currently supports `google-bucket` and local
+- `config`: Any config parameters needed for the source location
+- `parameters`: A list of accepted measurands and their mapped value and units
 
 The config file can contain any properties that should be configurable via the
 provider script. The above table however outlines the attributes that are required.
@@ -82,36 +107,25 @@ The script here should expose a function named `processor`. This function should
 
 The script below is a basic example of a new source:
 
-```js
-const Providers = require("../providers");
-const { Sensor, SensorNode, SensorSystem } = require("../station");
-const { Measures, FixedMeasure, MobileMeasure } = require("../measure");
-
-async function processor(source_name, source) {
-  // Get Locations/Sensor Systems via http/s3 etc.
-  const locs = await get_locations();
-
-  // Map locations into SensorNodes
-  const station = new SensorNode();
-
-  await Providers.put_stations(source_name, [station]);
-
-  const fixed_measures = new Measures(FixedMeasure);
-  // or
-  const mobile_measures = new Measures(MobileMeasure);
-
-  fixed_measures.push(
-    new FixedMeasure({
-      sensor_id: "PurpleAir-123",
-      measure: 123,
-      timestamp: Math.floor(new Date() / 1000), //UNIX Timestamp
-    })
-  );
-
-  await Providers.put_measures(source_name, fixed_measures);
+```json
+{
+  "name": "source_name",
+  "schema": "v1",
+  "provider": "versioning",
+  "frequency": "minute",
+  "type": "google-bucket",
+  "config" : {
+    "bucket":"location-bucket",
+    "folder":"pending"
+  },
+  "parameters": {
+    "pm25": ["pm25", "ppb"],
+    "pm10": ["pm10", "ppb"],
+    "temp": ["temperature", "c"],
+    "ws": ["wind_speed", "m/s"],
+    "wd": ["wind_direction", "deg"]
+  }
 }
-
-module.exports = { processor };
 ```
 
 ### Provider Secrets
@@ -142,3 +156,12 @@ The should look something like the following and be stored in its entirety withi
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/service-account-email"
 }
 ```
+
+### Deploying
+
+The deployment method (app.ts) is written to be dynamic and pull from the environmental variables to determine what gets deployed. There are 4 variable that can be modified when deploying:
+
+- `STACK`: used as the id for the stack
+- `BUCKET`: defines the ingest bucket
+- `API_URL`: the url to the api to use
+- `DEPLOYED_SOURCES`: a comma separated string that lists the sources that should be included in the deployment. Leaving this blank will deploy all sources. Names in the string must match the names in the source config files.

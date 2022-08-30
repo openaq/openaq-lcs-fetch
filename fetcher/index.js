@@ -1,3 +1,6 @@
+const path = process.env.ENV ? `.env.${process.env.ENV}` : '.env';
+require('dotenv').config({ path });
+
 const providers = new (require('./lib/providers'))();
 const sources = require('./sources');
 
@@ -18,13 +21,19 @@ async function handler(event) {
 
       const source_name = process.env.SOURCE || event.Records[0].body;
       const source = sources.find((source) => source.name === source_name);
-
       if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
 
-      console.log(`Processing ${process.env.STACK}: '${source.provider}/${source.name}'`);
+      // override the source type (for dev)
+      if(process.env.SOURCE_TYPE) {
+        source.type = process.env.SOURCE_TYPE;
+      }
+
+      console.log(
+        `Processing ${process.env.STACK}: ${source.type}/${source.provider}/${source.name}`
+      );
       await providers.processor(source);
 
-        return {};
+      return {};
     } catch (err) {
         console.error(err);
         process.exit(1);
