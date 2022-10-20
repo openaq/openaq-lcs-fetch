@@ -127,7 +127,7 @@ async function process_mobile_locations(source_name, source, measurands) {
 
 async function fixed_locations(source) {
     const params = {
-      time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
+        time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
         time_to: String(Math.round(Date.now() / 1000)),
         tags: '',
         usernames: '',
@@ -138,7 +138,7 @@ async function fixed_locations(source) {
 
     const url = new URL('/api/fixed/active/sessions.json', source.meta.url);
     url.searchParams.append('q', JSON.stringify(params));
-    //console.log(url.href)
+    // console.log(url.href)
     const res = await request({
         json: true,
         method: 'GET',
@@ -149,9 +149,9 @@ async function fixed_locations(source) {
 }
 
 async function mobile_measures(source, station_id) {
-  const url = new URL('/api/measurements.json', source.meta.url);
-  const start_time = Math.round(Date.now() / 1000) - 60 * 2;
-  const end_time = Math.round(Date.now() / 1000);
+    const url = new URL('/api/measurements.json', source.meta.url);
+    const start_time = Math.round(Date.now() / 1000) - 60 * 2;
+    const end_time = Math.round(Date.now() / 1000);
     url.searchParams.append('start_time', start_time);
     url.searchParams.append('stream_ids', station_id);
 
@@ -161,7 +161,7 @@ async function mobile_measures(source, station_id) {
         url: url
     });
 
-  return checkResponseData(res.body, start_time, end_time);
+    return checkResponseData(res.body, start_time, end_time);
 }
 
 async function mobile_locations(source) {
