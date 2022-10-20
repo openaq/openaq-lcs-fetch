@@ -4,12 +4,11 @@
  *     with the Google OAuth Service Account. https://stackoverflow.com/a/49965912/728583
  */
 
-const { google } = require('googleapis');
 const dayjs = require('dayjs');
 const pLimit = require('p-limit');
 
 const Providers = require('../lib/providers');
-const { fetchSecret, VERBOSE, toCamelCase, request } = require('../lib/utils');
+const { fetchSecret, VERBOSE, request } = require('../lib/utils');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
