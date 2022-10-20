@@ -4,12 +4,11 @@
  *     with the Google OAuth Service Account. https://stackoverflow.com/a/49965912/728583
  */
 
-const { google } = require('googleapis');
 const dayjs = require('dayjs');
 const pLimit = require('p-limit');
 
 const Providers = require('../lib/providers');
-const { fetchSecret, VERBOSE, toCamelCase, request } = require('../lib/utils');
+const { fetchSecret, VERBOSE, request } = require('../lib/utils');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
@@ -25,36 +24,6 @@ const lookup = {
     windDirection: ['winddirection', 'degrees'] //	Wind direction, compass degrees (0°=North, then clockwise)
 };
 
-/**
- * Fetch Clarity organizations from management worksheet
- * @param {string} spreadsheetId
- * @param {string} credentials
- * @returns {Organization[]}
- */
-async function listOrganizations(spreadsheetId, credentials) {
-    if (VERBOSE) console.debug(`Fetching Google sheet ${spreadsheetId}...`);
-    const sheets = google.sheets({
-        version: 'v4',
-        auth: new google.auth.GoogleAuth({
-            credentials,
-            scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly']
-        })
-    });
-    const res = await sheets.spreadsheets.values.get({
-        spreadsheetId,
-        range: "'Form Responses'!A:B"
-    });
-
-    const rows = res.data.values;
-    if (VERBOSE)
-        console.debug(`Retrieved ${rows.length} rows from the Google sheet`);
-    if (rows.length <= 1) return [];
-
-    const columns = rows.shift().map(toCamelCase);
-    return rows.map((row) =>
-        Object.assign({}, ...row.map((col, i) => ({ [columns[i]]: col })))
-    );
-}
 
 class ClarityApi {
     /**
@@ -299,21 +268,16 @@ function getSensorId(device, measurand) {
 
 module.exports = {
     async processor(source_name, source) {
-        const [credentials, measurandsIndex] = await Promise.all([
-            fetchSecret(source_name),
+        const [secret, measurandsIndex] = await Promise.all([
+            fetchSecret('clarity-keys'),
             Measurand.getIndexedSupportedMeasurands(lookup)
         ]);
-
-        const orgs = await listOrganizations(
-            source.meta.spreadsheetId,
-            credentials
-        );
-
+        console.log(secret.organizations);
         const now = dayjs();
         const limit = pLimit(10); // Limit to amount of orgs being processed at any given time
 
         return Promise.all(
-            orgs.map((org) =>
+            secret.organizations.map((org) =>
                 limit(() => new ClarityApi(source, org).sync(measurandsIndex, now))
             )
         );

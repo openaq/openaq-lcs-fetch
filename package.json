@@ -7,22 +7,22 @@
         "url": "https://github.com/openaq/openaq-lcs-fetch.git"
     },
     "author": {
-        "name" : "OpenAQ",
-        "email" : "dev@openaq.org",
-        "url" : "https://openaq.org"
+        "name": "OpenAQ",
+        "email": "dev@openaq.org",
+        "url": "https://openaq.org"
     },
     "contributors": [
-        {  
-            "name" : "Nick Ingalls",
-            "email" : "nick@ingalls.ca"
+        {
+            "name": "Nick Ingalls",
+            "email": "nick@ingalls.ca"
         },
         {
             "name": "Anthony Lukach",
             "email": "anthony@developmentseed.org"
         },
         {
-            "name" : "Russ Biggs",
-            "email" : "russ@openaq.org"
+            "name": "Russ Biggs",
+            "email": "russ@openaq.org"
         }
     ],
     "license": "MIT",
@@ -35,6 +35,7 @@
         "csv-parser": "^2.3.3",
         "csv-writer": "^1.6.0",
         "dayjs": "^1.9.6",
+        "dotenv": "^16.0.3",
         "geo-tz": "^7.0.1",
         "googleapis": "65",
         "p-limit": "^3.1.0",
