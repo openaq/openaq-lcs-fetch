@@ -263,7 +263,7 @@ class ClarityApi {
 }
 
 function getSensorId(device, measurand) {
-    return `${device.code}-${measurand.parameter}`;
+    return `clarity-${device.code}-${measurand.parameter}`;
 }
 
 module.exports = {
@@ -272,7 +272,6 @@ module.exports = {
             fetchSecret('clarity-keys'),
             Measurand.getIndexedSupportedMeasurands(lookup)
         ]);
-        console.log(secret.organizations);
         const now = dayjs();
         const limit = pLimit(10); // Limit to amount of orgs being processed at any given time
 
