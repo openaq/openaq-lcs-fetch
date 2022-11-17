@@ -46,7 +46,7 @@ async function getAllSensors(source, devices) {
 
 async function processor(source_name, source) {
     const devices  = await getDevices(source);
-
+    console.log(devices);
     const [
         measurands,
         sensorReadings
@@ -73,7 +73,7 @@ async function processor(source_name, source) {
                     .filter(Boolean)
                     .map((measurand) =>
                         new Sensor({
-                            sensor_id: `${reading.token}-${measurand.parameter}`,
+                            sensor_id: `senstate-${reading.token}-${measurand.parameter}`,
                             measurand_parameter: measurand.parameter,
                             measurand_unit: measurand.normalized_unit
                         })
@@ -89,15 +89,18 @@ async function processor(source_name, source) {
     const measures = new Measures(FixedMeasure);
 
     sensorReadings.map((reading) => {
-        reading.measurements.flatMap((o) => {
-            const measurand = measurands[o.parameters.parameter];
-            (!measurand) ? [] :
-                measures.push({
-                    sensor_id: `${reading.token}-${measurand.parameter}`,
-                    measure: measurand.normalize_value(o.parameters.value),
-                    timestamp: o.date.utc
-                });
-        });
+        if (reading.measurements) {
+            reading.measurements.flatMap((o) => {
+                const measurand = measurands[o.parameters.parameter];
+                (!measurand) ? [] :
+                    measures.push({
+                        sensor_id: `${reading.token}-${measurand.parameter}`,
+                        measure: measurand.normalize_value(o.parameters.value),
+                        timestamp: o.date.utc
+                    });
+            });
+        }
+
     });
 
     await Promise.all(stations);
