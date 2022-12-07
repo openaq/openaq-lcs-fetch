@@ -94,8 +94,7 @@ async function processor(source_name, source) {
                 const measurand = measurands[o.parameters.parameter];
                 (!measurand) ? [] :
                     measures.push({
-                        sensor_id: `${reading.token}-${measurand.parameter}`,
-                        measure: measurand.normalize_value(o.parameters.value),
+                        sensor_id: `senstate-${reading.token}-${measurand.parameter}`,                        measure: measurand.normalize_value(o.parameters.value),
                         timestamp: o.date.utc
                     });
             });
