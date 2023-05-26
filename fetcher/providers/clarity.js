@@ -76,8 +76,8 @@ class ClarityApi {
      *
      * @returns {Promise<Device[]>}
      */
-    listDevices() {
-        return request({
+    async listDevices() {
+        const devices = await request({
             json: true,
             method: 'GET',
             headers: { 'X-API-Key': this.apiKey },
@@ -98,6 +98,19 @@ class ClarityApi {
                     .map((d) => console.log(`${d.code} - ${d.lifeStage.stage}`));
             }
             return working;
+        });
+        const nodes = devices.map((o) => request({
+            json: true,
+            method: 'GET',
+            headers: { 'X-API-Key': this.apiKey },
+            url: new URL(`v2/devices/nodes/${o.nodeId}`, this.baseUrl),
+            qs: { 'org': this.orgId }
+        }).then((res) => {
+            o.location = res.body.deployment.location;
+            return o;
+        }));
+        return Promise.all(nodes).then((vals) => {
+            return vals;
         });
     }
 
