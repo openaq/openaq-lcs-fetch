@@ -40,6 +40,10 @@ class ClarityApi {
         return this.org.apiKey;
     }
 
+    get orgId() {
+        return this.org.orgId;
+    }
+
     get baseUrl() {
         return this.source.meta.url;
     }
@@ -77,7 +81,8 @@ class ClarityApi {
             json: true,
             method: 'GET',
             headers: { 'X-API-Key': this.apiKey },
-            url: new URL('v1/devices', this.baseUrl)
+            url: new URL('v2/devices/nodes', this.baseUrl),
+            qs: { 'org': this.orgId }
         }).then((response) => response.body).then((response) => {
             if (process.env.SOURCEID) {
                 const sources = process.env.SOURCEID.split(',');
@@ -85,12 +90,12 @@ class ClarityApi {
                 response = response.filter((d) => sources.includes(d.code));
                 console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length} of ${total}`);
             }
-            const working = response.filter((o) => o.lifeStage === 'working');
+            const working = response.filter((o) => o.lifeStage.stage === 'working');
             if (VERBOSE) {
                 console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
                 response
-                    .filter((d) => d.lifeStage !== 'working')
-                    .map((d) => console.log(`${d.code} - ${d.lifeStage}`));
+                    .filter((d) => d.lifeStage.stage !== 'working')
+                    .map((d) => console.log(`${d.code} - ${d.lifeStage.stage}`));
             }
             return working;
         });
