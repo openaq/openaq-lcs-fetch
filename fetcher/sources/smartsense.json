@@ -1,0 +1,9 @@
+{
+    "schema": "v1",
+    "provider": "smartsense",
+    "frequency": "hour",
+    "meta": {
+      "url": "https://api.smart-airq.com/"
+    }
+  }
+  
