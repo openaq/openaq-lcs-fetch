@@ -115,11 +115,13 @@ class SmartSenseApi {
             for (const thing of device.things) {
                 const measurand = supportedMeasurands[thing.type];
                 if (!measurand) continue;
-
+                const date = new Date(thing.timestamp);
+                date.setHours(date.getHours() + 1);
+                const timestamp = date.toISOString();
                 measures.push({
                     sensor_id: getSensorId(device, measurand),
                     measure: measurand.normalize_value(thing.value),
-                    timestamp: new Date(thing.timestamp).toISOString()
+                    timestamp: timestamp
                 });
             }
         }
