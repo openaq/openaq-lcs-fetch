@@ -127,7 +127,7 @@ async function process_mobile_locations(source_name, source, measurands) {
 
 async function fixed_locations(source) {
     const params = {
-      time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
+        time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
         time_to: String(Math.round(Date.now() / 1000)),
         tags: '',
         usernames: '',

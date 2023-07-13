@@ -62,13 +62,13 @@ class ClarityApi {
             let ds = response.body;
 
             if (process.env.SOURCEID) {
-              ds = ds.filter((d) => d.deviceCode === process.env.SOURCEID);
+                ds = ds.filter((d) => d.deviceCode === process.env.SOURCEID);
             } else {
-              ds = ds.filter(d=>d.sourceType == 'CLARITY_NODE');
+                ds = ds.filter((d)=>d.sourceType === 'CLARITY_NODE');
             }
 
             if (VERBOSE) {
-              console.debug(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
+                console.debug(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
                 ds.map((d) => console.log(`${d.sourceType}: (${d.subscriptionStatus}) ${d.deviceCode} - ${d.name}`));
             }
             return ds;
@@ -79,12 +79,12 @@ class ClarityApi {
      *
      * @returns {Promise<Device[]>}
      */
-  listDevices() {
-    return request({
-      json: true,
-      method: 'GET',
-      headers: { 'X-API-Key': this.apiKey },
-      url: new URL('v2/devices/nodes', this.baseUrl),
+    listDevices() {
+        return request({
+            json: true,
+            method: 'GET',
+            headers: { 'X-API-Key': this.apiKey },
+            url: new URL('v2/devices/nodes', this.baseUrl),
             qs: { 'org': this.orgId }
         }).then((response) => response.body).then((response) => {
             if (process.env.SOURCEID) {
@@ -95,7 +95,7 @@ class ClarityApi {
             }
             const working = response.filter((o) => o.lifeStage.stage === 'working');
             if (VERBOSE) {
-              console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
+                console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
                 response
                     .filter((d) => d.lifeStage.stage !== 'working')
                     .map((d) => console.log(`DEVICE: ${d.nodeId} - ${d.model} - ${d.lifeStage.stage}`));
@@ -152,11 +152,11 @@ class ClarityApi {
         while (true) {
             url.searchParams.set('skip', offset);
             if (VERBOSE) console.log(`Fetching ${url}&key=${this.apiKey}`);
-          const response = await request({
-            url,
+            const response = await request({
+                url,
                 json: true,
                 method: 'GET',
-              headers: { 'X-API-Key': this.apiKey, 'Accept-Encoding': 'gzip' },
+                headers: { 'X-API-Key': this.apiKey, 'Accept-Encoding': 'gzip' },
                 gzip: true
             });
 
@@ -196,42 +196,42 @@ class ClarityApi {
      */
     async sync(supportedMeasurands, since) {
         // get all the devices, even if expired
-      let devices = await this.listAugmentedDevices();
+        let devices = await this.listAugmentedDevices();
 
-      if (VERBOSE) {
-        console.debug(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
-        devices.map( d => {
-          if(d.pairedAccessoryModules.length>0) {
-            console.debug(`--------------------\n Found device with ${d.length} modules`);
-          }
-        });
-      }
+        if (VERBOSE) {
+            console.debug(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
+            devices.map( (d) => {
+                if (d.pairedAccessoryModules.length > 0) {
+                    console.debug(`--------------------\n Found device with ${d.length} modules`);
+                }
+            });
+        }
         // Create one station per device
         const stations = devices.map((device) =>
             Providers.put_station(
                 this.source.provider,
-              new SensorNode({
-                sensor_node_id: `${this.org.organizationName}-${device.nodeId}`,
-                sensor_node_site_name: device.name || device.nodeId, // fall back to code when missing name
-                sensor_node_geometry: device.location.coordinates,
-                sensor_node_status: device.subscriptionStatus,
-                sensor_node_source_name: this.source.provider, //
-                sensor_node_site_description: this.org.organizationName,
-                  sensor_node_ismobile: false, // should remove this and just use instrument
-                  //sensor_node_instrument: device.model,
+                new SensorNode({
+                    sensor_node_id: `${this.org.organizationName}-${device.nodeId}`,
+                    sensor_node_site_name: device.name || device.nodeId, // fall back to code when missing name
+                    sensor_node_geometry: device.location.coordinates,
+                    sensor_node_status: device.subscriptionStatus,
+                    sensor_node_source_name: this.source.provider, //
+                    sensor_node_site_description: this.org.organizationName,
+                    sensor_node_ismobile: false, // should remove this and just use instrument
+                    // sensor_node_instrument: device.model,
                     sensor_node_deployed_date: device.lifeStage.when,
                     sensor_system: new SensorSystem({
                         sensor_system_manufacturer_name: this.source.provider,
                         //   Create one sensor per characteristic
-                      sensors: [] //Object.values(supportedMeasurands)
-                        .map(
-                          (measurand) =>
-                          new Sensor({
-                            sensor_id: getSensorId(device, measurand),
-                            measurand_parameter: measurand.parameter,
-                            measurand_unit: measurand.normalized_unit
-                          })
-                        )
+                        sensors: [] // Object.values(supportedMeasurands)
+                            .map(
+                                (measurand) =>
+                                    new Sensor({
+                                        sensor_id: getSensorId(device, measurand),
+                                        measurand_parameter: measurand.parameter,
+                                        measurand_unit: measurand.normalized_unit
+                                    })
+                            )
                     })
                 })
             )
