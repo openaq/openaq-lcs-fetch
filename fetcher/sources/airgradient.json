@@ -1,0 +1,9 @@
+{
+    "schema": "v1",
+    "provider": "airgradient",
+    "frequency": "hour",
+    "meta": {
+      "url": "https://api.airgradient.com"
+    }
+  }
+  
