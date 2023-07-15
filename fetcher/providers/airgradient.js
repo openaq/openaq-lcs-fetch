@@ -57,7 +57,7 @@ function getLatestReading(sensorData) {
 }
 
 async function processor(source_name, source) {
-    const token = await fetchSecret('airgradient');
+    const { token } = await fetchSecret('airgradient');
     let devices  = await getDevices(source, token);
     devices = devices.filter((o) => !o.offline);
     devices = devices.filter((o) => o.latitude != null && o.longitude != null );
