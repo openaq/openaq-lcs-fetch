@@ -1,4 +1,4 @@
-const { request, VERBOSE } = require('./utils');
+const { VERBOSE } = require('./utils');
 
 class Measurand {
     constructor({ input_param, parameter, unit }) {
@@ -45,34 +45,7 @@ class Measurand {
      */
     static async getSupportedMeasurands(lookups) {
         // Fetch from API
-        const supportedMeasurandParameters = [];
-        let morePages;
-        let page = 1;
-        do {
-            const url = new URL(
-                '/v2/parameters',
-                process.env.LCS_API || 'https://api.openaq.org'
-            );
-            url.searchParams.append('page', page++);
-            const {
-                body: { meta, results }
-            } = await request({
-                json: true,
-                method: 'GET',
-                url: url,
-                headers: {
-                    'User-Agent': 'openaq-lcs-fetch'
-                }
-            });
-            for (const { name } of results) {
-                supportedMeasurandParameters.push(name);
-            }
-            morePages = meta.found > meta.page * meta.limit;
-        } while (morePages);
-        if (VERBOSE)
-            console.debug(
-                `Fetched ${supportedMeasurandParameters.length} supported measurement parameters.`
-            );
+        const supportedMeasurandParameters = ['pm10','pm25','o3','co','no2','so2','no2','co','so2','o3','bc','co2','no2','bc','pm1','co2','wind_direction','nox','no','rh','nox','ch4','pn','o3','ufp','wind_speed','no','pm','ambient_temp','pressure','pm25-old','relativehumidity','temperature','so2','co','um003','um010','temperature','um050','um025','pm100','pressure','um005','humidity','um100','voc','ozone','nox','bc','no','pm4','so4','ec','oc','cl','no3','pm25'];
 
         // Filter provided lookups
         const supportedLookups = Object.entries(lookups).filter(

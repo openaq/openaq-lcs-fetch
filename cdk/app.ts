@@ -21,7 +21,7 @@ const stack = new EtlPipeline(app, "lcs-etl-pipeline", {
 //   schedulerModuleDir: "scheduler",
 //   sources: require('../fetcher/sources'),
 //   bucketName: process.env.BUCKET || 'openaq-fetches-testing',
-//   lcsApi: process.env.LCS_API || 'https://api.openaq.org'
+//   lcsApi: process.env.LCS_API || 'https://openaq.org'
 // });
 
 

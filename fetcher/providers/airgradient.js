@@ -67,7 +67,7 @@ async function processor(source_name, source) {
         const sensorNode = new SensorNode({
             sensor_node_id: `airgradient-${reading.locationId}`,
             sensor_node_source_name: `${source_name}`,
-            sensor_node_site_name: reading.name,
+            sensor_node_site_name: reading.publicLocationName,
             sensor_node_geometry: [reading.longitude, reading.latitude],
             sensor_node_city: reading.city,
             sensor_node_country: reading.country,
