@@ -25,5 +25,7 @@ const stack = new EtlPipeline(app, "lcs-etl-pipeline", {
 // });
 
 
-cdk.Tags.of(stack).add('Project', 'lcs')
+cdk.Tags.of(stack).add('project', 'openaq')
+cdk.Tags.of(stack).add('product', 'lcs-fetch')
+cdk.Tags.of(stack).add('env', 'prod')
 // cdk.Tags.of(testingStack).add('Project', 'lcs-testing')
