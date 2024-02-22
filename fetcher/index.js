@@ -5,7 +5,7 @@ const providers = new (require('./lib/providers'))();
 const sources = require('./sources');
 
 if (require.main === module) {
-    handler();
+   handler();
 }
 
 async function handler(event) {
@@ -31,6 +31,7 @@ async function handler(event) {
       console.log(
         `Processing ${process.env.STACK}: ${source.type}/${source.provider}/${source.name}`
       );
+
       await providers.processor(source);
 
       return {};

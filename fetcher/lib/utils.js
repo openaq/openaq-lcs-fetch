@@ -32,7 +32,7 @@ const applyCredentials = credentials => {
   if(!storage && credentials) {
     if (!credentials.client_email) throw new Error('client_email required');
     if (!credentials.client_id) throw new Error('client_id required');
-    console.debug(`Initializing storage object '${credentials.project_id}' as ${credentials.client_email}`);
+    if (VERBOSE) console.debug(`Initializing storage object '${credentials.project_id}' as ${credentials.client_email}`);
     let projectId = credentials.project_id;
     // https://github.com/googleapis/google-cloud-node/blob/main/docs/authentication.md
     storage = new Storage({
@@ -105,7 +105,7 @@ const putObject = async (data, Key) => {
     data = await gzip(data);
   }
 
-  if(!DRYRUN) {
+  //if(!DRYRUN) {
     if (VERBOSE) console.debug(`Saving data to ${Key}`);
     await s3.putObject({
       Bucket,
@@ -116,10 +116,10 @@ const putObject = async (data, Key) => {
     }).promise().catch( err => {
       console.log('error putting object', err);
     });
-  } else {
-    if (VERBOSE) console.debug(`Would have saved data to ${Key}`);
-    await writeJson(data, Key);
-  }
+  //} else {
+  //  if (VERBOSE) console.debug(`Would have saved data to ${Key}`);
+  //  await writeJson(data, Key);
+  //}
 };
 
 const writeJson = async (data, filepath) => {
@@ -233,11 +233,16 @@ const listFilesLocal = async (config) => {
 
 const fetchFile = async file => {
   const source = file.source;
+	var data;
   if(source == 'google-bucket') {
-	  return await fetchFileGoogleBucket(file);
+	  data = await fetchFileGoogleBucket(file);
   } else {
-	  return await fetchFileLocal(file);
+	  data = await fetchFileLocal(file);
   }
+	if(DRYRUN) {
+			writeJson(data, `raw/${file.path}`)
+	}
+	return data;
 };
 
 const fetchFileLocal = async file => {
@@ -318,7 +323,8 @@ const writeError = async (file) => {
   file.path = `${dir}/errors/${parsed.name}_error.txt`;
 
   if (DRYRUN) {
-    return file;
+	  return await writeErrorLocal(file);
+    //return file;
   } else if(source == 'google-bucket') {
 	  return await writeErrorGoogleBucket(file);
   } else {
@@ -335,8 +341,15 @@ const writeErrorGoogleBucket = async (file) => {
 };
 
 const writeErrorLocal = async (file) => {
-  if (VERBOSE) console.debug(`Writing local error to ${file.path}`);
-  fs.writeFileSync(file.path, file.error);
+  const dir = process.env.LOCAL_DESTINATION_BUCKET || __dirname;
+  const fullpath = path.join(dir, file.path);
+  if (VERBOSE) console.debug(`Writing local error to ${fullpath}`, file);
+  fs.promises.mkdir(path.dirname(fullpath), {recursive: true})
+    .then( res => {
+				fs.writeFileSync(fullpath, file.error);
+    }).catch( err => {
+      console.warn(err);
+    });
   return file;
 };
 

@@ -51,7 +51,7 @@ var versions = {}; // for tracking versions
 var stations = {}; // for keeping track of new stations
 var sensors = {};  // for tracking new sensors
 var measures_list = [];
-
+const sep = "-"; // how to seperate the parts of the names
 
 /**
  * Build sensor ID from a given sensor node ID and measurand parameter.
@@ -63,7 +63,7 @@ var measures_list = [];
  * @returns {string}
  */
 function getRootSensorId(sourceId, sensorNodeId, measurandParameter) {
-  return `${sourceId}-${sensorNodeId}-${measurandParameter}`;
+  return `${sourceId}${sep}${sensorNodeId}${sep}${measurandParameter}`;
 }
 
 
@@ -80,13 +80,14 @@ function getRootSensorId(sourceId, sensorNodeId, measurandParameter) {
  */
 function getSensorId(sourceId, sensorNodeId, measurandParameter, lifeCycle, versionDate) {
   const lifeCycleId = !!lifeCycle
-        ? `-${lifeCycle}`
+        ? `${sep}${lifeCycle}`
         : '';
   // if no lifecyle value is provided we should assume this is raw data
+	// dashes in the date will cause issues later
   const versionId = versionDate && !!lifeCycle
-        ? `-${versionDate}`
+        ? `${sep}${versionDate.replace(/-/g, '')}`
         : '';
-  return `${sourceId}-${sensorNodeId}-${measurandParameter}${lifeCycleId}${versionId}`;
+  return `${sourceId}${sep}${sensorNodeId}${sep}${measurandParameter}${lifeCycleId}${versionId}`;
 }
 
 /**
@@ -121,7 +122,7 @@ async function processor(source) {
 
   if(credentials) {
     // add the credentials to the source config
-    if (VERBOSE) console.debug("Secret credentials", credentials);
+    if (VERBOSE>1) console.debug("Secret credentials", credentials);
     source.config.credentials = credentials;
   }
 
@@ -139,10 +140,10 @@ async function processor(source) {
         return res;
       })
       .catch( err => {
-        console.error(`File processing error: ${err.message}`);
+        console.error(`File processing error: ${file.path} - ${err.message}`);
         writeError({
           ...file,
-          error: `**FILE ERROR**\nFILE: ${file.path}\nDETAILS: ${err.message}`,
+          error: `**FILE ERROR**\nFILE: ${file.path}\nDETAILS: ${err.message}\n${JSON.stringify(data)}`,
         });
 	      moveFile(file, 'errors');
       });
@@ -177,118 +178,123 @@ async function processor(source) {
  * @returns {??}
  */
 async function processFile({ file, data, measurands }) {
-  if (VERBOSE) console.debug('Processing file', file.path);
-  const measures = new Measures(FixedMeasure, file);
-  const sourceId = 'versioning';
+		if (VERBOSE) console.debug('Processing file', file.path);
+		const measures = new Measures(FixedMeasure, file);
+		const sourceId = 'versioning';
 
-  const undefines = [undefined, null, 'NaN', 'NA'];
+		const undefines = [undefined, null, 'NaN', 'NA', '', '99999900'];
 
-  // we are supporting a few different file structures at this point
-  // all of them are csv and so they should be arrays when we reach this point
-  // and so the best method for distinguishing what to do here is going to be
-  // based on the fields that are available in the array/row
-  for(const row of data) {
-    // every row we encounter has to include the station/location info
-    if(!row.location) throw new Error('No location field found');
-    if (VERBOSE) console.log(`Processing location: ${row.location}`, row);
-    let sensorNodeId = row.location;
-    let station = stations[sensorNodeId];
+		// we are supporting a few different file structures at this point
+		// all of them are csv and so they should be arrays when we reach this point
+		// and so the best method for distinguishing what to do here is going to be
+		// based on the fields that are available in the array/row
+		for(const row of data) {
+				// every row we encounter has to include the station/location info
+				if(!row.location) throw new Error('No location field found');
+				if (VERBOSE>1) console.log(`Processing location: ${row.location}`, row);
 
-    // Compile the station information and check if it exists
-    // If not this will add the sensor node to the stations directory
-    // if it does exist then it will compare the json strings and possibly update.
-    // Either a new file or an update will trigger an injest of the station data
-    if(!station) {
-      station = new SensorNode({
-        sensor_node_id: sensorNodeId,
-        sensor_node_site_name: sensorNodeId,
-        sensor_node_source_name: sourceId,
-        sensor_node_geometry: !undefines.includes(row.lat) ? [row.lng, row.lat] : null,
-        ...row,
-      });
-      stations[sensorNodeId] = station;
-    }
+				try {
+						let sensorNodeId = row.location;
+						let station = stations[sensorNodeId];
 
-    // Loop through the expected measurands and check
-    // to see if we have a column that matches, this would be for a measurement
-    // use this method for the versions and sensor files as well because
-    // its as good a method as any to match the parameter to the measurand
-    for (const measurand of measurands) {
-      // if we have a parameter column we assume this is either
-      // a versioning file or a sensor meta data file
-      // in either case each row will be a new sensor id
-      if(row.parameter && measurand.input_param!==row.parameter) {
-        //console.log('parameter file, skiping', parameter, measurand.input_param);
-        continue;
-      }
+						// Compile the station information and check if it exists
+						// If not this will add the sensor node to the stations directory
+						// if it does exist then it will compare the json strings and possibly update.
+						// Either a new file or an update will trigger an injest of the station data
+						if(!station) {
+								station = new SensorNode({
+										sensor_node_id: sensorNodeId,
+										sensor_node_site_name: sensorNodeId,
+										sensor_node_source_name: sourceId,
+										sensor_node_geometry: !undefines.includes(row.lat) ? [row.lng, row.lat] : null,
+										...row,
+								});
+								stations[sensorNodeId] = station;
+						}
 
-      const measure = row[measurand.input_param];
+						// Loop through the expected measurands and check
+						// to see if we have a column that matches, this would be for a measurement
+						// use this method for the versions and sensor files as well because
+						// its as good a method as any to match the parameter to the measurand
+						for (const measurand of measurands) {
+								// if we have a parameter column we assume this is either
+								// a versioning file or a sensor meta data file
+								// in either case each row will be a new sensor id
+								if(row.parameter && measurand.input_param!==row.parameter) {
+										if (VERBOSE) console.log('parameter file, skiping', parameter, measurand.input_param);
+										continue;
+								}
 
-      // build the sensor id
-      const sensorId = getSensorId(
-        sourceId,
-        sensorNodeId,
-        measurand.parameter,
-        row.lifecycle,
-        row.version_date,
-      );
+								const measure = row[measurand.input_param];
 
-      let sensor = sensors[sensorId];
+								// build the sensor id
+								const sensorId = getSensorId(
+										sourceId,
+										sensorNodeId,
+										measurand.parameter,
+										row.lifecycle,
+										row.version_date,
+								);
 
-      if(!sensor) {
-        sensor = new Sensor({
-          sensor_id: sensorId,
-          measurand_parameter: measurand.parameter,
-          measurand_unit: measurand.normalized_unit,
-          ...row,
-        });
-        station.addSensor(sensor);
-        sensors[sensorId] = sensor;
-      }
+								let sensor = sensors[sensorId];
 
-      // we should check for a version now as we could have a version without a measure
-      // Compile the version information and check if it exists
-      // if not the version will be added to the versions directory
-      // and trigger an import
+								if(!sensor) {
+										sensor = new Sensor({
+												sensor_id: sensorId,
+												measurand_parameter: measurand.parameter,
+												measurand_unit: measurand.normalized_unit,
+												...row,
+										});
+										station.addSensor(sensor);
+										sensors[sensorId] = sensor;
+								}
 
-      if(row.lifecycle && (row.version_date || row.version)) {
-        if(!versions[sensorId]) {
-          versions[sensorId] = new Version({
-            parent_sensor_id: getSensorId(
-              sourceId,
-              sensorNodeId,
-              measurand.parameter
-            ),
-            sensor_id: sensorId,
-            version_id: row.version_date || row.version,
-		        life_cycle_id: row.lifecycle,
-		        parameter: measurand.parameter,
-            filename: file.name,
-            readme: row.readme,
-            provider: sourceId,
-          });
-        }
-      }
-      // Now we can check for a measure and potentially skip
-      if (undefines.includes(measure)) continue;
-      // make sure that we have this sensor
+								// we should check for a version now as we could have a version without a measure
+								// Compile the version information and check if it exists
+								// if not the version will be added to the versions directory
+								// and trigger an import
 
-      // add the measurement to the measures
-      measures.push({
-        sensor_id: sensorId,
-        measure: measurand.normalize_value(measure),
-        timestamp: row.datetime,
-      });
-    }
-  }
+								if(row.lifecycle && (row.version_date || row.version)) {
+										if(!versions[sensorId]) {
+												versions[sensorId] = new Version({
+														parent_sensor_id: getSensorId(
+																sourceId,
+																sensorNodeId,
+																measurand.parameter
+														),
+														sensor_id: sensorId,
+														version_id: row.version_date || row.version,
+														life_cycle_id: row.lifecycle,
+														parameter: measurand.parameter,
+														filename: file.name,
+														readme: row.readme,
+														provider: sourceId,
+												});
+										}
+								}
 
-  // And then we can add any measurements created
-  if(measures.length) {
-    measures_list.push(measures);
-  }
+								// Now we can check for a measure and potentially skip
+								if (undefines.includes(measure)) continue;
+								// make sure that we have this sensor
+								// add the measurement to the measures
+								measures.push({
+										sensor_id: sensorId,
+										measure: measurand.normalize_value(measure),
+										timestamp: row.datetime,
+								});
+						}
+				} catch (err) {
+						//console.error(`Row processing error: `, err)
+				}
+		}
 
-  // what should we return to the processor??
-  return true;
+		// And then we can add any measurements created
+		if(measures.length) {
+				measures_list.push(measures);
+		}
+
+		// what should we return to the processor??
+		return true;
 }
 
 

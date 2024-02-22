@@ -1,13 +1,14 @@
 const { request, VERBOSE } = require('./utils');
 
 class Measurand {
-    constructor({ input_param, parameter, unit }) {
+    constructor({ input_param, parameter, unit, provider_unit }) {
         // How a measurand is described by external source (e.g. "CO")
         this.input_param = input_param;
         // How a measurand is described internally (e.g. "co")
         this.parameter = parameter;
         // Unit for measurand (e.g "ppb")
         this.unit = unit;
+				this.provider_unit = provider_unit
     }
 
     /**
@@ -17,21 +18,33 @@ class Measurand {
      * @returns { Object } normalizer
      */
     get _normalizer() {
-        return (
-            {
-                ppb: ['ppm', (val) => val / 1000],
-                'ng/m³': ['µg/m³', (val) => val / 1000],
-                pp100ml: ['particles/cm³', (val) => val / 100]
-            }[this.unit] || [this.unit, (val) => val]
-        );
+				// provider_units: { unit: conversion function }
+        return ({
+                ppb: {
+										ppm: (val) => val / 1000
+								},
+                ppm: {
+										ppb: (val) => val * 1000
+								},
+								f: {
+										c: (val) => (val - 32) * 5/9
+								},
+                'ng/m3': {
+										'ug/m3': (val) => val / 1000
+								},
+                pp100ml: {
+										'particles/cm³': (val) => val / 100
+								},
+						}[this.provider_unit][this.unit]) ?? ((val) => val);
+        ;
     }
 
     get normalized_unit() {
-        return this._normalizer[0];
+				return this.unit;
     }
 
     get normalize_value() {
-        return this._normalizer[1];
+        return this._normalizer
     }
 
     /**
@@ -39,62 +52,71 @@ class Measurand {
      * identifies a measurand) to a tuple of a measurand parameter (i.e. how we
      * identify a measurand internally) and a measurand unit, generate an array
      * Measurand objects that are supported by the OpenAQ API.
-     *
+     * form -> { input_parameter : [ measurand_parameter, input_units ] }
+		 *
      * @param {*} lookups, e.g. {'CO': ['co', 'ppb'] }
      * @returns { Measurand[] }
      */
     static async getSupportedMeasurands(lookups) {
-      // Fetch from API
-      const supportedMeasurandParameters = [];
-      const baseurl = new URL('/v2/parameters', process.env.API_URL || 'https://api.openaq.org');
-      if (VERBOSE) console.debug(`Getting Supported Measurands - ${baseurl}`);
-      let morePages;
-      let page = 1;
-        do {
-            const url = new URL(
-              '/v2/parameters',
-              baseurl,
-            );
-          url.searchParams.append('page', page++);
-          const {
-            body: { meta, results }
-          } = await request({
-            json: true,
-            method: 'GET',
-            url
-          });
+				// we are supporting everything in the fetcher
+				const supportedMeasurandParameters = {
+						ambient_temp: 'c',
+						bc: 'ug/m3',
+						bc_375: 'ug/m3',
+						bc_470: 'ug/m3',
+						bc_528: 'ug/m3',
+						bc_625: 'ug/m3',
+						bc_880: 'ug/m3',
+						ch4: 'ppm',
+						cl: 'ppb',
+						co2: 'ppm',
+						co: 'ppm',
+						ec: 'ppb',
+						humidity: '%',
+						no2: 'ppm',
+						no3: 'ppb',
+						no: 'ppm',
+						nox: 'ppm',
+						o3: 'ppm',
+						oc: 'ppb',
+						ozone: 'ppb',
+						pm100: 'ug/m3',
+						pm10: 'ug/m3',
+						pm1: 'ug/m3',
+						pm25: 'ug/m3',
+						pm4: 'ug/m3',
+						pm: 'ug/m3',
+						pressure: 'hpa',
+						relativehumidity: '%',
+						so2: 'ppm',
+						so4: 'ppb',
+						temperature: 'c',
+						ufp: 'particles/cm3',
+						um003: 'particles/cm3',
+						um005: 'particles/cm3',
+						um010: 'particles/cm3',
+						um025: 'particles/cm3',
+						um050: 'particles/cm3',
+						um100: 'particles/cm3',
+						v: 'ppb',
+						voc: 'iaq',
+						wind_direction: 'deg',
+						wind_speed: 'm/s',
+				};
 
-          if(!results) throw new Error(`Could not connect to ${baseurl}`);
-
-          for (const { name } of results) {
-            supportedMeasurandParameters.push(name);
-          }
-          morePages = meta.found > meta.page * meta.limit;
-        } while (morePages);
-        if (VERBOSE)
-            console.debug(
-              `Fetched ${supportedMeasurandParameters.length} supported measurement parameters from ${baseurl}.`
-            );
-
-      // Filter provided lookups
-        const supportedLookups = Object.entries(lookups).filter(
-            // eslint-disable-next-line no-unused-vars
-            ([input_param, [measurand_parameter, measurand_unit]]) =>
-                supportedMeasurandParameters.includes(measurand_parameter)
-        );
-
-        if (!supportedLookups.length) throw new Error('No measurands supported.');
-        if (VERBOSE) {
-          Object.values(lookups)
-            .map(([measurand_parameter]) => measurand_parameter)
-            .filter((measurand_parameter) => !supportedMeasurandParameters.includes(measurand_parameter))
-            .map((measurand_parameter) => console.warn(`ignoring unsupported parameter: ${measurand_parameter}`));
-        }
-
-        return supportedLookups.map(
-            ([input_param, [parameter, unit]]) =>
-                new Measurand({ input_param, parameter, unit })
-        );
+        let supported = Object.entries(lookups)
+						.map(([input_param, [parameter, provider_unit]]) => {
+								return new Measurand({
+										input_param,
+										parameter,
+										unit: supportedMeasurandParameters[parameter],
+										provider_unit
+								})
+						}).filter( m => m.unit)
+          //  ([input_param, [parameter, unit, provider_unit]]) =>
+          //      new Measurand({ input_param, parameter, unit, provider_unit })
+				if (VERBOSE>1) console.log('Supported measurands', supported)
+				return supported
     }
 
     /**
