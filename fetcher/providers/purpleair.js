@@ -85,6 +85,7 @@ async function processor(source) {
 
     await Providers.put_measures(source.provider, measures);
     if (VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
+		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function fetchSensorData(source) {

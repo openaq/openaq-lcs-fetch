@@ -45,7 +45,9 @@ class Providers {
 				if(VERBOSE) console.log('Starting processor', { ...source, ...config });
         const log = await this[source.provider].processor({ ...source, ...config });
 				// source_name is more consistent with our db schema
-				log.source_name = source.provider;
+				if(typeof(log) == 'object' && !Array.isArray(log) && !log.source_name) {
+						log.source_name = source.provider;
+				}
 				return(log);
     }
 
@@ -56,6 +58,7 @@ class Providers {
      * @param {String} subject
      */
 		async publish(message, subject) {
+				console.log('Publishing:', subject, message);
 				if(process.env.TOPIC_ARN) {
 						const cmd = new PublishCommand({
 								TopicArn: process.env.TOPIC_ARN,

@@ -107,6 +107,7 @@ async function processor(source) {
 
     await Providers.put_measures(source.provider, measures, `senstate-${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`);
     console.log(`ok - all ${measures.length} measurements pushed`);
+		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 

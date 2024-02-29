@@ -5,8 +5,7 @@
  */
 
 const dayjs = require('dayjs');
-//const pLimit = require('p-limit');
-const { default: pLimit } = import('p-limit');
+const pLimit = require('p-limit');
 
 const Providers = require('../lib/providers');
 const { VERBOSE, request } = require('../lib/utils');
@@ -275,6 +274,8 @@ class ClarityApi {
             ...stations,
             Providers.put_measures(this.source.provider, measures)
         ]);
+				const source_name = `${this.source.provider}-${this.org.orgId}`;
+				return { source_name, locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
     }
 }
 
