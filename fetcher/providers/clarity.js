@@ -5,10 +5,11 @@
  */
 
 const dayjs = require('dayjs');
-const pLimit = require('p-limit');
+//const pLimit = require('p-limit');
+const { default: pLimit } = import('p-limit');
 
 const Providers = require('../lib/providers');
-const { fetchSecret, VERBOSE, request } = require('../lib/utils');
+const { VERBOSE, request } = require('../lib/utils');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
@@ -282,16 +283,13 @@ function getSensorId(device, measurand) {
 }
 
 module.exports = {
-    async processor(source_name, source) {
-        const [secret, measurandsIndex] = await Promise.all([
-            fetchSecret('clarity-keys'),
-            Measurand.getIndexedSupportedMeasurands(lookup)
-        ]);
+    async processor(source) {
+        const measurandsIndex = await Measurand.getIndexedSupportedMeasurands(lookup);
         const now = dayjs();
         const limit = pLimit(10); // Limit to amount of orgs being processed at any given time
 
         return Promise.all(
-            secret.organizations.map((org) =>
+            source.organizations.map((org) =>
                 limit(() => new ClarityApi(source, org).sync(measurandsIndex, now))
             )
         );

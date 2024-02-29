@@ -12,13 +12,13 @@ const lookup = {
 };
 
 
-async function processor(source_name, source) {
+async function processor(source) {
     const measurands = await Measurand.getSupportedMeasurands(lookup);
-    await process_fixed_locations(source_name, source, measurands);
-    await process_mobile_locations(source_name, source, measurands);
+    await process_fixed_locations(source, measurands);
+    await process_mobile_locations(source, measurands);
 }
 
-async function process_fixed_locations(source_name, source, measurands) {
+async function process_fixed_locations(source, measurands) {
     const stations = [];
     const measures = new Measures(FixedMeasure);
 
@@ -60,17 +60,17 @@ async function process_fixed_locations(source_name, source, measurands) {
             });
         }
 
-        stations.push(Providers.put_station(source_name, sta));
+        stations.push(Providers.put_station(source.provider, sta));
     }
 
     await Promise.all(stations);
     console.log(`ok - all ${stations.length} fixed stations pushed`);
 
-    await Providers.put_measures(source_name, measures);
+    await Providers.put_measures(source.provider, measures);
     console.log(`ok - all ${measures.length} fixed measures pushed`);
 }
 
-async function process_mobile_locations(source_name, source, measurands) {
+async function process_mobile_locations(source, measurands) {
     const stations = [];
     const measures = new Measures(MobileMeasure);
 
@@ -115,13 +115,13 @@ async function process_mobile_locations(source_name, source, measurands) {
                 }));
             }
         }
-        stations.push(Providers.put_station(source_name, sta));
+        stations.push(Providers.put_station(source.provider, sta));
     }
 
     await Promise.all(stations);
     console.log(`ok - all ${stations.length} mobile stations pushed`);
 
-    await Providers.put_measures(source_name, measures);
+    await Providers.put_measures(source.provider, measures);
     console.log(`ok - all ${measures.length} mobile measures pushed`);
 }
 

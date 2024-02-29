@@ -32,33 +32,35 @@
         "doc": "documentation serve -w fetcher/**/*.js"
     },
     "dependencies": {
-        "csv-parser": "^2.3.3",
+        "@aws-sdk/client-s3": "^3.523.0",
+        "@aws-sdk/client-secrets-manager": "^3.523.0",
+        "@aws-sdk/client-sns": "^3.521.0",
+        "csv-parser": "^3.0.0",
         "csv-writer": "^1.6.0",
-        "dayjs": "^1.9.6",
-        "dotenv": "^16.0.3",
-        "geo-tz": "^7.0.1",
-        "googleapis": "65",
-        "p-limit": "^3.1.0",
+        "dayjs": "^1.11.10",
+        "dotenv": "^16.4.5",
+        "geo-tz": "^8.0.1",
+        "googleapis": "133",
+        "p-limit": "^5.0.0",
         "request": "^2.88.2"
     },
     "devDependencies": {
-        "@babel/eslint-parser": "^7.12.1",
-        "@babel/plugin-syntax-class-properties": "^7.12.1",
-        "@types/node": "10.17.27",
-        "ajv": "^6.12.6",
-        "aws-cdk": "^2.87.0",
-        "aws-cdk-lib": "^2.87.0",
-        "aws-sdk": "^2.804.0",
-        "constructs": "^10.2.69",
-        "documentation": "^13.1.0",
-        "eslint": "^7.15.0",
+        "@babel/eslint-parser": "^7.23.10",
+        "@babel/plugin-syntax-class-properties": "^7.12.13",
+        "@types/node": "20.11.20",
+        "ajv": "^8.12.0",
+        "aws-cdk": "^2.129.0",
+        "aws-cdk-lib": "^2.129.0",
+        "constructs": "^10.3.0",
+        "documentation": "^14.0.3",
+        "eslint": "^8.56.0",
         "eslint-plugin-node": "^11.1.0",
-        "tap-dot": "^2.0.0",
-        "tape": "^5.0.1",
-        "ts-node": "^9.0.0",
-        "typescript": "~3.9.7"
+        "tap-dot": "^1.0.0",
+        "tape": "^5.7.5",
+        "ts-node": "^10.9.2",
+        "typescript": "~5.3.3"
     },
     "engines": {
-        "node": "16"
+        "node": "20"
     }
 }

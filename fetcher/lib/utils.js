@@ -1,10 +1,51 @@
 const zlib = require('zlib');
 const { promisify } = require('util');
 const request = promisify(require('request'));
-const AWS = require('aws-sdk');
+
+const { SecretsManagerClient, GetSecretValueCommand } = require("@aws-sdk/client-secrets-manager");
+const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
+
+const s3 = new S3Client({
+    maxRetries: 10
+});
+
+
+
+async function getObject(Bucket, Key) {
+		const cmd = new GetObjectCommand({
+				Bucket,
+				Key,
+		});
+		var stream = null;
+		const resp = await s3.send(cmd);
+		let currentData = null;
+		if(resp && resp.ContentEncoding == 'gzip') {
+				const ba = await resp.Body.transformToByteArray();
+				currentData = (await unzip(Buffer.from(ba))).toString('utf-8');
+		} else if(resp && resp.Body) {
+				currentData = await resp.Body.transformToString();
+		}
+		return currentData;
+}
+
+async function putObject(text, Bucket, Key, gzip=true, ContentType='application/json') {
+		let ContentEncoding = null;
+    if(gzip) {
+				text = compressedString = await gzip(text);
+				ContentEncoding = 'gzip';
+		}
+		const cmd = new PutObjectCommand({
+				Bucket,
+				Key,
+        Body: text,
+        ContentType,
+        ContentEncoding,
+		});
+		return await s3.send(cmd);
+}
 
 /**
  * Retrieve secret from AWS Secrets Manager
@@ -12,26 +53,36 @@ const DRYRUN = !!process.env.DRYRUN;
  *
  * @returns {object}
  */
-async function fetchSecret(source_name) {
-    const secretsManager = new AWS.SecretsManager({
-        region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
+async function fetchSecret(source) {
+		const key = source.secretKey;
+		if(!key) {
+				return {};
+		}
+    const secretsManager = new SecretsManagerClient({
+        region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
+				maxAttemps: 1,
+
     });
 
     if (!process.env.STACK) throw new Error('STACK Env Var Required');
 
     const SecretId = `${
         process.env.SECRET_STACK || process.env.STACK
-    }/${source_name}`;
+    }/${key}`;
 
-    if (VERBOSE) console.debug(`Fetching ${SecretId}...`);
+    if (VERBOSE) console.debug(`Fetching ${SecretId} secret...`);
 
-    const { SecretString } = await secretsManager
-        .getSecretValue({
+		const cmd = new GetSecretValueCommand({
             SecretId
-        })
-        .promise();
-
-    return JSON.parse(SecretString);
+        });
+    const resp = await secretsManager
+					.send(cmd)
+					.catch(err => console.error(`Missing ${key} secret`));
+		if(resp && resp.SecretString) {
+				return JSON.parse(resp.SecretString);
+		} else {
+				return {};
+		}
 }
 
 /**
@@ -119,6 +170,10 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     return fdata;
 }
 
+function publisher(subject, message, topic) {
+
+}
+
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 
@@ -130,6 +185,8 @@ module.exports = {
     unzip,
     VERBOSE,
     DRYRUN,
+		getObject,
+		putObject,
     prettyPrintStation,
     checkResponseData
 };

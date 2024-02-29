@@ -1,8 +1,10 @@
 const { VERBOSE } = require('./utils');
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3({
-    maxRetries: 10
-});
+const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+
+const {
+		getObject,
+		putObject,
+} = require('./utils');
 
 /**
  * Helper to store metadata about a source in S3.
@@ -20,8 +22,8 @@ class MetaDetails {
 
     async load() {
         try {
-            const resp = await s3.getObject(this.props).promise();
-            return JSON.parse(resp.Body.toString('utf-8'));
+            const body = await getObject(this.props.Bucket, this.props.Key);
+            return JSON.parse(body);
         } catch (err) {
             if (err.statusCode !== 404)
                 throw err;
@@ -32,11 +34,11 @@ class MetaDetails {
     }
 
     save(body) {
-        return s3.putObject({
-            ...this.props,
-            Body: JSON.stringify(body),
-            ContentType: 'application/json'
-        }).promise();
+        return putObject(
+						JSON.stringify(body),
+						this.props.Bucket,
+						this.props.Key,
+        );
     }
 }
 exports.MetaDetails = MetaDetails;

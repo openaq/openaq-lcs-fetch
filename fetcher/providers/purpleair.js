@@ -22,14 +22,13 @@ const lookup = {
     'ozone1': ['ozone', 'ppb']
 };
 
-async function processor(source_name, source) {
+async function processor(source) {
     const [
         measurands,
-        sensorReadings
+        sensorReadings,
     ] = await Promise.all([
         Measurand.getSupportedMeasurands(lookup),
-        fetchSecret(source.provider)
-            .then(({ apiKey }) => fetchSensorData(source, apiKey))
+				fetchSensorData(source),
     ]);
 
     const stations = [];
@@ -77,18 +76,18 @@ async function processor(source_name, source) {
         }
         // Upload sensor system
         stations.push(
-            Providers.put_station(source_name, sensorNode)
+            Providers.put_station(source.provider, sensorNode)
         );
     }
 
     await Promise.all(stations);
     if (VERBOSE) console.log(`ok - all ${stations.length} stations pushed`);
 
-    await Providers.put_measures(source_name, measures);
+    await Providers.put_measures(source.provider, measures);
     if (VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
 }
 
-async function fetchSensorData(source, apiKey) {
+async function fetchSensorData(source) {
     // https://api.purpleair.com/#api-sensors-get-sensors-data
     const url = new URL('/v1/sensors', source.meta.url);
     url.searchParams.append(
@@ -127,7 +126,7 @@ async function fetchSensorData(source, apiKey) {
     const { body: { fields, data } } = await request({
         json: true,
         method: 'GET',
-        headers: { 'X-API-Key': apiKey },
+        headers: { 'X-API-Key': source.apiKey },
         url: url
     });
 

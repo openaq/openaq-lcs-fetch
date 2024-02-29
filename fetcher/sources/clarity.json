@@ -2,6 +2,7 @@
   "schema": "v1",
   "provider": "clarity",
   "frequency": "hour",
+	"secretKey": "clarity-keys",
   "meta": {
     "url": "https://clarity-data-api.clarity.io"
   }

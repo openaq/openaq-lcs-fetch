@@ -2,7 +2,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { request } = require('../lib/utils');
+const { request, VERBOSE } = require('../lib/utils');
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const { find } = require('geo-tz');
@@ -44,9 +44,9 @@ async function getAllSensors(source, devices) {
     }));
 }
 
-async function processor(source_name, source) {
+async function processor(source) {
     const devices  = await getDevices(source);
-    console.log(devices);
+    if(VERBOSE) console.log(devices);
     const [
         measurands,
         sensorReadings
@@ -59,7 +59,7 @@ async function processor(source_name, source) {
     for (const reading of readings) {
         const sensorNode = new SensorNode({
             sensor_node_id: `senstate-${reading.token}`,
-            sensor_node_source_name: `${source_name}`,
+            sensor_node_source_name: `${source.provider}`,
             sensor_node_site_name: reading.name,
             sensor_node_geometry: [reading.coordinates.longitude, reading.coordinates.latitude],
             sensor_node_city: reading.city,
@@ -81,7 +81,7 @@ async function processor(source_name, source) {
             })
         });
         stations.push(
-            Providers.put_station(source_name, sensorNode)
+            Providers.put_station(source.provider, sensorNode)
         );
     }
 
@@ -105,7 +105,7 @@ async function processor(source_name, source) {
     await Promise.all(stations);
     console.log(`ok - all ${stations.length} stations pushed`);
 
-    await Providers.put_measures(source_name, measures, `senstate-${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`);
+    await Providers.put_measures(source.provider, measures, `senstate-${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`);
     console.log(`ok - all ${measures.length} measurements pushed`);
 }
 

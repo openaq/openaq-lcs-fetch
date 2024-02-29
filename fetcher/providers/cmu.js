@@ -4,7 +4,8 @@ const dayjs = require('dayjs')
     .extend(require('dayjs/plugin/utc'))
     .extend(require('dayjs/plugin/timezone'))
     .extend(require('dayjs/plugin/customParseFormat'));
-const pLimit = require('p-limit');
+//const pLimit = require('p-limit');
+const { default: pLimit } = import('p-limit');
 const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
@@ -352,4 +353,3 @@ module.exports = {
     processor,
     getMonthQuery
 };
-
