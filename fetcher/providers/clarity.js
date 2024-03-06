@@ -16,12 +16,12 @@ const { Measurand } = require('../lib/measurand');
 const lookup = {
     relHumid: ['relativehumidity', '%'], // RelativeHumidity
     temperature: ['temperature', 'c'], // Temperature
-    pm2_5ConcMass: ['pm25', 'μg/m3'], //	PM2.5 mass concentration
-    pm1ConcMass: ['pm1', 'μg/m3'], //	PM1 mass concentration
-    pm10ConcMass: ['pm10', 'μg/m3'], //	PM10 mass concentration
+    pm2_5ConcMass: ['pm25', 'μg/m3'], //  PM2.5 mass concentration
+    pm1ConcMass: ['pm1', 'μg/m3'], // PM1 mass concentration
+    pm10ConcMass: ['pm10', 'μg/m3'], // PM10 mass concentration
     no2Conc: ['no2', 'ppb'], // NO2 volume concentration
-    windSpeed: ['windspeed', 'm/s'], //	Wind speed
-    windDirection: ['winddirection', 'degrees'] //	Wind direction, compass degrees (0°=North, then clockwise)
+    windSpeed: ['windspeed', 'm/s'], // Wind speed
+    windDirection: ['winddirection', 'degrees'] //  Wind direction, compass degrees (0°=North, then clockwise)
 };
 
 
@@ -274,8 +274,8 @@ class ClarityApi {
             ...stations,
             Providers.put_measures(this.source.provider, measures)
         ]);
-				const source_name = `${this.source.provider}-${this.org.orgId}`;
-				return { source_name, locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+        const source_name = `${this.source.provider}-${this.org.orgId}`;
+        return { source_name, locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
     }
 }
 

@@ -2,7 +2,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { VERBOSE, fetchSecret, request } = require('../lib/utils');
+const { VERBOSE, request } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -25,10 +25,10 @@ const lookup = {
 async function processor(source) {
     const [
         measurands,
-        sensorReadings,
+        sensorReadings
     ] = await Promise.all([
         Measurand.getSupportedMeasurands(lookup),
-				fetchSensorData(source),
+        fetchSensorData(source)
     ]);
 
     const stations = [];
@@ -85,7 +85,7 @@ async function processor(source) {
 
     await Providers.put_measures(source.provider, measures);
     if (VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
-		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+    return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function fetchSensorData(source) {

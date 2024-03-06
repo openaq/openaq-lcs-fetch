@@ -26,10 +26,10 @@ async function handler(event) {
         if (!source) throw new Error(`Unable to find ${source_name} in sources.`);
 
         const log = await providers.processor(source);
-				await providers.publish(log, 'fetcher/success');
+        await providers.publish(log, 'fetcher/success');
         return log;
     } catch (err) {
-				providers.publish(err, 'fetcher/error');
+        providers.publish(err, 'fetcher/error');
         process.exit(1);
     }
 }

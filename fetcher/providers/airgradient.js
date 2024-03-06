@@ -2,7 +2,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { fetchSecret, request } = require('../lib/utils');
+const { request } = require('../lib/utils');
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const { find } = require('geo-tz');
@@ -43,10 +43,10 @@ async function getAllSensors(source, devices) {
 }
 
 function getLatestReading(sensorData) {
-		// airgradient returns a running average in time beginning
-		// and the data we are looking for is not always ready when we first check
-		// so we are going back 3 hrs in order to cover missing data
-		// if we still see gaps we can increase the lag time
+    // airgradient returns a running average in time beginning
+    // and the data we are looking for is not always ready when we first check
+    // so we are going back 3 hrs in order to cover missing data
+    // if we still see gaps we can increase the lag time
     const d = new Date();
     d.setHours(d.getHours() - 3);
     d.setMinutes(0);
@@ -54,20 +54,20 @@ function getLatestReading(sensorData) {
     d.setMilliseconds(0);
 
     const params = Object.keys(lookup);
-		const measurements = sensorData
-					.filter((o) => new Date(o.date).getTime() >= d.getTime())
-					.map(o => {
-							const timestamp = new Date(o.date);
-							// convert to hour ending to match our system
-							timestamp.setHours(timestamp.getHours() + 1);
+    const measurements = sensorData
+        .filter((o) => new Date(o.date).getTime() >= d.getTime())
+        .map((o) => {
+            const timestamp = new Date(o.date);
+            // convert to hour ending to match our system
+            timestamp.setHours(timestamp.getHours() + 1);
 
-							const m = params.map( key => ({
-									timestamp: timestamp.toISOString(),
-									parameter: key,
-									value: o[key]
-							}));
-							return(m);
-					}).flat();
+            const m = params.map((key) => ({
+                timestamp: timestamp.toISOString(),
+                parameter: key,
+                value: o[key]
+            }));
+            return (m);
+        }).flat();
 
     return measurements;
 }
@@ -121,10 +121,10 @@ async function processor(source) {
         }
 
     });
-    //console.log(`ok - all ${stations.length} stations pushed`);
+    // console.log(`ok - all ${stations.length} stations pushed`);
     Providers.put_measures(source.provider, measures, `airgradient-${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`);
-    //console.log(`ok - all ${measures.length} measurements pushed`);
-		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+    // console.log(`ok - all ${measures.length} measurements pushed`);
+    return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 
@@ -140,7 +140,6 @@ async function fetchSensorData(source, locationId) {
     });
     if (statusCode === 200) {
         response = body;
-        //body.locationId = locationId;
         response.statusCode = 200;
     } else {
         response.statusCode = statusCode;

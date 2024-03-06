@@ -1,6 +1,6 @@
-const AWS = require('aws-sdk');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 
-const sqs = new AWS.SQS();
+const sqs = new SQSClient();
 
 async function handler() {
     if (!process.env.QUEUE_URL)
@@ -10,10 +10,11 @@ async function handler() {
 
     for (const source of process.env.SOURCES.split(',')) {
         try {
-            await sqs.sendMessage({
+            const cmd = new SendMessageCommand({
                 MessageBody: source,
                 QueueUrl: process.env.QUEUE_URL
-            }).promise();
+            });
+            await sqs.send(cmd);
             console.log(`Inserted '${source}' into queue`);
         } catch (err) {
             console.error(`Failed to send message for ${source}: ${err}`);

@@ -1,9 +1,8 @@
 const { VERBOSE } = require('./utils');
-const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const {
-		getObject,
-		putObject,
+    getObject,
+    putObject
 } = require('./utils');
 
 /**
@@ -35,9 +34,9 @@ class MetaDetails {
 
     save(body) {
         return putObject(
-						JSON.stringify(body),
-						this.props.Bucket,
-						this.props.Key,
+            JSON.stringify(body),
+            this.props.Bucket,
+            this.props.Key,
         );
     }
 }

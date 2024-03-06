@@ -46,7 +46,7 @@ async function getAllSensors(source, devices) {
 
 async function processor(source) {
     const devices  = await getDevices(source);
-    if(VERBOSE) console.log(devices);
+    if (VERBOSE) console.log(devices);
     const [
         measurands,
         sensorReadings
@@ -107,7 +107,7 @@ async function processor(source) {
 
     await Providers.put_measures(source.provider, measures, `senstate-${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`);
     console.log(`ok - all ${measures.length} measurements pushed`);
-		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+    return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 
