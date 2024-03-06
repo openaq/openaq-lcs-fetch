@@ -53,7 +53,7 @@ export class EtlPipeline extends cdk.Stack {
     this.prepareNodeModules(props.moduleDir);
     const handler = new lambda.Function(this, 'Fetcher', {
       description: 'Fetch a single source for a given time period',
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(props.moduleDir),
       timeout: cdk.Duration.seconds(900),
@@ -105,7 +105,7 @@ export class EtlPipeline extends cdk.Stack {
         `${interval}Scheduler`,
         {
           description: `${interval}Scheduler`,
-          runtime: lambda.Runtime.NODEJS_16_X,
+          runtime: lambda.Runtime.NODEJS_20_X,
           handler: 'index.handler',
           code: lambda.Code.fromAsset(props.moduleDir),
           timeout: cdk.Duration.seconds(25),
