@@ -47,7 +47,7 @@ function getLatestReading(sensorData) {
     // and the data we are looking for is not always ready when we first check
     // so we are going back 3 hrs in order to cover missing data
     // if we still see gaps we can increase the lag time
-		const offset = 3;
+    const offset = 3;
     const from = new Date();
     const to = new Date();
     from.setHours(from.getHours() - offset);
@@ -55,7 +55,7 @@ function getLatestReading(sensorData) {
     from.setSeconds(0);
     from.setMilliseconds(0);
 
-		// the current hour is always wrong because its a rolling average
+    // the current hour is always wrong because its a rolling average
     to.setHours(to.getHours() - 1);
     to.setMinutes(0);
     to.setSeconds(0);
@@ -64,9 +64,9 @@ function getLatestReading(sensorData) {
     const params = Object.keys(lookup);
     const measurements = sensorData
         .filter((o) => {
-						const now = new Date(o.date).getTime();
-						return now >= from.getTime() && now <= to.getTime();
-				})
+            const now = new Date(o.date).getTime();
+            return now >= from.getTime() && now <= to.getTime();
+        })
         .map((o) => {
             const timestamp = new Date(o.date);
             // convert to hour ending to match our system

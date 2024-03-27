@@ -64,7 +64,6 @@ class Providers {
             });
             return await sns.send(cmd);
         } else {
-            console.log('No publish topic', subject, message);
             return {};
         }
     }
@@ -119,7 +118,7 @@ class Providers {
         if (!DRYRUN) {
             if (VERBOSE) console.debug(`Saving station to ${Bucket}/${Key}`);
             await putObject(
-								compressedString,
+                compressedString,
                 Bucket,
                 Key,
                 false,

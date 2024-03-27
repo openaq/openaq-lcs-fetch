@@ -16,7 +16,7 @@ async function processor(source) {
     const measurands = await Measurand.getSupportedMeasurands(lookup);
     const fixed = await process_fixed_locations(source, measurands);
     const mobile = await process_mobile_locations(source, measurands);
-		return fixed;
+    return [fixed, mobile];
 }
 
 async function process_fixed_locations(source, measurands) {
@@ -25,7 +25,8 @@ async function process_fixed_locations(source, measurands) {
 
     const locations = await fixed_locations(source);
     if (!locations.length) {
-        return console.warn('No fixed locations returned, exiting.');
+        console.warn('No fixed locations returned, exiting.');
+        return { source_name: 'habitatmap:fixed', locations: 0, measures: 0 };
     }
     console.log(`ok - pulled ${locations.length} fixed stations`);
 
@@ -65,11 +66,8 @@ async function process_fixed_locations(source, measurands) {
     }
 
     await Promise.all(stations);
-    //console.log(`ok - all ${stations.length} fixed stations pushed`);
-
     await Providers.put_measures(source.provider, measures);
-    //console.log(`ok - all ${measures.length} fixed measures pushed`);
-		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+    return { source_name: 'habitatmap:fixed', locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function process_mobile_locations(source, measurands) {
@@ -78,7 +76,8 @@ async function process_mobile_locations(source, measurands) {
 
     const locations = await mobile_locations(source);
     if (!locations.length) {
-        return console.warn('No mobile locations returned, exiting.');
+        console.warn('No mobile locations returned, exiting.');
+        return { source_name: 'habitatmap:mobile', locations: 0, measures: 0 };
     }
     console.log(`ok - pulled ${locations.length} mobile stations`);
 
@@ -121,11 +120,8 @@ async function process_mobile_locations(source, measurands) {
     }
 
     await Promise.all(stations);
-    //console.log(`ok - all ${stations.length} mobile stations pushed`);
-
     await Providers.put_measures(source.provider, measures);
-    //console.log(`ok - all ${measures.length} mobile measures pushed`);
-		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
+    return { source_name: 'habitatmap:mobile', locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function fixed_locations(source) {

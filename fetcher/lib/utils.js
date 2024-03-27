@@ -4,25 +4,24 @@ const request = promisify(require('request'));
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
-const { NodeHttpHandler } = require('@smithy/node-http-handler');
-const https = require('https');
 
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
 
 const s3 = new S3Client({
-    maxRetries: 10,
-		// requestHandler: new NodeHttpHandler({
-		// 		httpsAgent: new https.Agent({
-		// 				maxSockets: 1000
-		// 		}),
-		// 		socketAcquisitionWarningTimeout: 6000,
-		// })
+    maxRetries: 10
 });
 
 const gzip = promisify(zlib.gzip);
 const unzip = promisify(zlib.unzip);
 
+
+/**
+ * Returns the data from an s3 file
+ * @param {string} Bucket name of the s3 bucket
+ * @param {string} Key - s3 key
+ * @returns {Object} data in the file
+ */
 async function getObject(Bucket, Key) {
     const cmd = new GetObjectCommand({
         Bucket,
@@ -39,6 +38,16 @@ async function getObject(Bucket, Key) {
     return currentData;
 }
 
+/**
+ *  New method to put a file in the s3 bucket
+ * @param {string} text data that will go in the file
+ * @param {string} Bucket name of the s3 bucket
+ * @param {string} Key s3 file path
+ * @param {boolean} gzip should we gzip the data
+ * @param {string} ContentType content type header
+ * @param {string} ContentEncoding
+ * @returns {object} response from aws
+ */
 async function putObject(text, Bucket, Key, gzip = true, ContentType = 'application/json', ContentEncoding = null) {
     if (gzip) {
         text = await gzip(text);
