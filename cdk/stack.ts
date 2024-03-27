@@ -20,6 +20,7 @@ export class EtlPipeline extends cdk.Stack {
       sources,
       lcsApi,
       bucketName,
+      topicArn,
       ...props
     }: StackProps
   ) {
@@ -36,6 +37,7 @@ export class EtlPipeline extends cdk.Stack {
       queue,
       bucket,
       lcsApi,
+      topicArn,
     });
     this.buildSchedulerLambdas({
       moduleDir: schedulerModuleDir,
@@ -49,11 +51,12 @@ export class EtlPipeline extends cdk.Stack {
     queue: sqs.Queue;
     bucket: s3.IBucket;
     lcsApi: string;
+    topicArn: string;
   }): lambda.Function {
     this.prepareNodeModules(props.moduleDir);
     const handler = new lambda.Function(this, 'Fetcher', {
       description: 'Fetch a single source for a given time period',
-      runtime: lambda.Runtime.NODEJS_16_X,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset(props.moduleDir),
       timeout: cdk.Duration.seconds(900),
@@ -61,8 +64,8 @@ export class EtlPipeline extends cdk.Stack {
       environment: {
         BUCKET: props.bucket.bucketName,
         STACK: cdk.Stack.of(this).stackName,
-        VERBOSE: '1',
         LCS_API: props.lcsApi,
+        TOPIC_ARN: props.topicArn,
       },
     });
     handler.addEventSource(
@@ -72,6 +75,14 @@ export class EtlPipeline extends cdk.Stack {
     );
     props.queue.grantConsumeMessages(handler);
     props.bucket.grantReadWrite(handler);
+		handler.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['sns:Publish'],
+        resources: [props.topicArn],
+      })
+    );
+
     handler.addToRolePolicy(
       new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
@@ -86,6 +97,7 @@ export class EtlPipeline extends cdk.Stack {
         ],
       })
     );
+
     return handler;
   }
 
@@ -105,7 +117,7 @@ export class EtlPipeline extends cdk.Stack {
         `${interval}Scheduler`,
         {
           description: `${interval}Scheduler`,
-          runtime: lambda.Runtime.NODEJS_16_X,
+          runtime: lambda.Runtime.NODEJS_20_X,
           handler: 'index.handler',
           code: lambda.Code.fromAsset(props.moduleDir),
           timeout: cdk.Duration.seconds(25),
@@ -147,6 +159,7 @@ interface StackProps extends cdk.StackProps {
   fetcherModuleDir: string;
   schedulerModuleDir: string;
   lcsApi: string;
+  topicArn: string;
   bucketName: string;
   sources: Source[];
 }

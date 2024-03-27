@@ -2,7 +2,7 @@ const Providers = require('../lib/providers');
 const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-const { VERBOSE, fetchSecret, request } = require('../lib/utils');
+const { VERBOSE, request } = require('../lib/utils');
 
 const lookup = {
     // input_param: [measurand_parameter, measurand_unit]
@@ -22,14 +22,13 @@ const lookup = {
     'ozone1': ['ozone', 'ppb']
 };
 
-async function processor(source_name, source) {
+async function processor(source) {
     const [
         measurands,
         sensorReadings
     ] = await Promise.all([
         Measurand.getSupportedMeasurands(lookup),
-        fetchSecret(source.provider)
-            .then(({ apiKey }) => fetchSensorData(source, apiKey))
+        fetchSensorData(source)
     ]);
 
     const stations = [];
@@ -77,18 +76,19 @@ async function processor(source_name, source) {
         }
         // Upload sensor system
         stations.push(
-            Providers.put_station(source_name, sensorNode)
+            Providers.put_station(source.provider, sensorNode)
         );
     }
 
     await Promise.all(stations);
     if (VERBOSE) console.log(`ok - all ${stations.length} stations pushed`);
 
-    await Providers.put_measures(source_name, measures);
+    await Providers.put_measures(source.provider, measures);
     if (VERBOSE) console.log(`ok - all ${measures.length} measurements pushed`);
+    return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
-async function fetchSensorData(source, apiKey) {
+async function fetchSensorData(source) {
     // https://api.purpleair.com/#api-sensors-get-sensors-data
     const url = new URL('/v1/sensors', source.meta.url);
     url.searchParams.append(
@@ -119,7 +119,7 @@ async function fetchSensorData(source, apiKey) {
     // if we are looking for a specific sourceid lets not limit
     if (!process.env.SOURCEID) {
         // Filter results to only include sensors modified or updated within the last number of seconds.
-        url.searchParams.append('max_age', 75);
+        url.searchParams.append('max_age', 100);
         // Filter results to only include outdoor sensors.
         url.searchParams.append('location_type', 0);
     }
@@ -127,7 +127,7 @@ async function fetchSensorData(source, apiKey) {
     const { body: { fields, data } } = await request({
         json: true,
         method: 'GET',
-        headers: { 'X-API-Key': apiKey },
+        headers: { 'X-API-Key': source.apiKey },
         url: url
     });
 

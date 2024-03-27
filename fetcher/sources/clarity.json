@@ -1,8 +1,10 @@
 {
-  "schema": "v1",
-  "provider": "clarity",
-  "frequency": "hour",
-  "meta": {
-    "url": "https://clarity-data-api.clarity.io"
-  }
+    "schema": "v1",
+    "provider": "clarity",
+    "frequency": "hour",
+    "secretKey": "clarity-keys",
+    "active": true,
+    "meta": {
+        "url": "https://clarity-data-api.clarity.io"
+    }
 }

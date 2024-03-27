@@ -2,8 +2,9 @@
     "schema": "v1",
     "provider": "airgradient",
     "frequency": "hour",
+    "secretKey": "airgradient",
+    "active": true,
     "meta": {
       "url": "https://api.airgradient.com"
     }
   }
-  

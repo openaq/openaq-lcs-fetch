@@ -7,6 +7,8 @@ class Measures {
     constructor(type) {
         this.headers = [];
         this.measures = [];
+        this.from = null;
+        this.to = null;
 
         if (type === FixedMeasure) {
             this.headers = ['sensor_id', 'measure', 'timestamp'];
@@ -16,6 +18,12 @@ class Measures {
     }
 
     push(measure) {
+        if (!this.to || measure.timestamp > this.to) {
+            this.to = measure.timestamp;
+        }
+        if (!this.from || measure.timestamp < this.from) {
+            this.from = measure.timestamp;
+        }
         this.measures.push(measure);
     }
 

@@ -1,37 +1,104 @@
 const zlib = require('zlib');
 const { promisify } = require('util');
 const request = promisify(require('request'));
-const AWS = require('aws-sdk');
+
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
+const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
 
+const s3 = new S3Client({
+    maxRetries: 10
+});
+
+const gzip = promisify(zlib.gzip);
+const unzip = promisify(zlib.unzip);
+
+
+/**
+ * Returns the data from an s3 file
+ * @param {string} Bucket name of the s3 bucket
+ * @param {string} Key - s3 key
+ * @returns {Object} data in the file
+ */
+async function getObject(Bucket, Key) {
+    const cmd = new GetObjectCommand({
+        Bucket,
+        Key
+    });
+    const resp = await s3.send(cmd);
+    let currentData = null;
+    if (resp && resp.ContentEncoding === 'gzip') {
+        const ba = await resp.Body.transformToByteArray();
+        currentData = (await unzip(Buffer.from(ba))).toString('utf-8');
+    } else if (resp && resp.Body) {
+        currentData = await resp.Body.transformToString();
+    }
+    return currentData;
+}
+
+/**
+ *  New method to put a file in the s3 bucket
+ * @param {string} text data that will go in the file
+ * @param {string} Bucket name of the s3 bucket
+ * @param {string} Key s3 file path
+ * @param {boolean} gzip should we gzip the data
+ * @param {string} ContentType content type header
+ * @param {string} ContentEncoding
+ * @returns {object} response from aws
+ */
+async function putObject(text, Bucket, Key, gzip = true, ContentType = 'application/json', ContentEncoding = null) {
+    if (gzip) {
+        text = await gzip(text);
+        ContentEncoding = 'gzip';
+    }
+    const cmd = new PutObjectCommand({
+        Bucket,
+        Key,
+        Body: text,
+        ContentType,
+        ContentEncoding
+    });
+    return await s3.send(cmd);
+}
+
 /**
  * Retrieve secret from AWS Secrets Manager
- * @param {string} source_name The source for which we are fetching a secret.
+ * @param {string} source The source object for which we are fetching a secret.
  *
  * @returns {object}
  */
-async function fetchSecret(source_name) {
-    const secretsManager = new AWS.SecretsManager({
-        region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
+async function fetchSecret(source) {
+    const key = source.secretKey;
+    if (!key) {
+        return {};
+    }
+    const secretsManager = new SecretsManagerClient({
+        region: process.env.AWS_DEFAULT_REGION || 'us-east-1',
+        maxAttemps: 1
     });
 
     if (!process.env.STACK) throw new Error('STACK Env Var Required');
 
     const SecretId = `${
         process.env.SECRET_STACK || process.env.STACK
-    }/${source_name}`;
+    }/${key}`;
 
-    if (VERBOSE) console.debug(`Fetching ${SecretId}...`);
+    if (VERBOSE) console.debug(`Fetching ${SecretId} secret...`);
 
-    const { SecretString } = await secretsManager
-        .getSecretValue({
-            SecretId
-        })
-        .promise();
+    const cmd = new GetSecretValueCommand({
+        SecretId
+    });
 
-    return JSON.parse(SecretString);
+    const resp = await secretsManager
+        .send(cmd)
+        .catch((err) => console.error(`Missing ${key} secret: ${err}`));
+    if (resp && resp.SecretString) {
+        return JSON.parse(resp.SecretString);
+    } else {
+        return {};
+    }
 }
 
 /**
@@ -87,6 +154,8 @@ function prettyPrintStation(station) {
  * @param {array} data
  * @param {timestamp} start_timestamp
  * @param {timestamp} end_timestamp
+ *
+ * @returns {array}
  */
 function checkResponseData(data, start_timestamp, end_timestamp) {
     const n = data && data.length;
@@ -119,8 +188,6 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     return fdata;
 }
 
-const gzip = promisify(zlib.gzip);
-const unzip = promisify(zlib.unzip);
 
 module.exports = {
     fetchSecret,
@@ -130,6 +197,8 @@ module.exports = {
     unzip,
     VERBOSE,
     DRYRUN,
+    getObject,
+    putObject,
     prettyPrintStation,
     checkResponseData
 };

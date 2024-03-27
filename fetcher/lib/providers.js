@@ -1,17 +1,19 @@
 const fs = require('fs');
 const path = require('path');
-const AWS = require('aws-sdk');
+const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
+
 const {
     VERBOSE,
     DRYRUN,
     gzip,
-    unzip,
+    fetchSecret,
+    getObject,
+    putObject,
     prettyPrintStation
 } = require('./utils');
 
-const s3 = new AWS.S3({
-    maxRetries: 10
-});
+
+const sns = new SNSClient();
 
 /**
  * Runtime handler for each of the custom provider scripts, as well
@@ -28,13 +30,42 @@ class Providers {
     /**
      * Given a source config file, choose the corresponding provider script to run
      *
-     * @param {String} source_name
      * @param {Object} source
      */
-    async processor(source_name, source) {
+    async processor(source) {
+        if (VERBOSE) console.debug('Processing', source.provider);
         if (!this[source.provider]) throw new Error(`${source.provider} is not a supported provider`);
+        // fetch any secrets we may be storing for the provider
+        if (VERBOSE) console.debug('Fetching secret: ', source.secretKey);
+        const config = await fetchSecret(source);
+        // and combine them with the source config for more generic access
+        if (VERBOSE) console.log('Starting processor', { ...source, ...config });
+        const log = await this[source.provider].processor({ ...source, ...config });
+        // source_name is more consistent with our db schema
+        if (typeof(log) == 'object' && !Array.isArray(log) && !log.source_name) {
+            log.source_name = source.provider;
+        }
+        return (log);
+    }
 
-        await this[source.provider].processor(source_name, source);
+    /**
+     * Publish the results of the fetch to our SNS topic
+     *
+     * @param {Object} message
+     * @param {String} subject
+     */
+    async publish(message, subject) {
+        console.log('Publishing:', subject, message);
+        if (process.env.TOPIC_ARN && message) {
+            const cmd = new PublishCommand({
+                TopicArn: process.env.TOPIC_ARN,
+                Subject: subject,
+                Message: JSON.stringify(message)
+            });
+            return await sns.send(cmd);
+        } else {
+            return {};
+        }
     }
 
     /**
@@ -67,8 +98,7 @@ class Providers {
 
         // Diff data to minimize costly S3 PUT operations
         try {
-            const resp = await s3.getObject({ Bucket, Key }).promise();
-            const currentData = (await unzip(resp.Body)).toString('utf-8');
+            const currentData = await getObject(Bucket, Key);
             if (currentData === newData && !process.env.FORCE) {
                 if (VERBOSE) console.log(`station has not changed - station: ${providerStation}`);
                 return;
@@ -78,25 +108,23 @@ class Providers {
                 prettyPrintStation(newData);
                 console.log('-----------------> from');
                 prettyPrintStation(currentData);
-            } else {
-                console.log(`Updating the station file: ${providerStation}`);
             }
         } catch (err) {
-            if (err.statusCode !== 404) throw err;
+            if (err.Code !== 'NoSuchKey') throw err;
         }
 
         const compressedString = await gzip(newData);
 
         if (!DRYRUN) {
             if (VERBOSE) console.debug(`Saving station to ${Bucket}/${Key}`);
-
-            await s3.putObject({
+            await putObject(
+                compressedString,
                 Bucket,
                 Key,
-                Body: compressedString,
-                ContentType: 'application/json',
-                ContentEncoding: 'gzip'
-            }).promise();
+                false,
+                'application/json',
+                'gzip'
+            );
         }
         if (VERBOSE) console.log(`finished station: ${providerStation}\n------------------------`);
     }
@@ -117,19 +145,14 @@ class Providers {
         const Key = `${process.env.STACK}/measures/${provider}/${filename}.csv.gz`;
         const compressedString = await gzip(measures.csv());
 
+
         if (DRYRUN) {
             console.log(`Would have saved ${measures.length} measurements to '${Bucket}/${Key}'`);
             return new Promise((y) => y(true));
         }
         if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
 
-        return s3.putObject({
-            Bucket,
-            Key,
-            Body: compressedString,
-            ContentType: 'text/csv',
-            ContentEncoding: 'gzip'
-        }).promise();
+        return await putObject(compressedString, Bucket, Key, false, 'text/csv', 'gzip');
     }
 }
 
