@@ -14,8 +14,9 @@ const lookup = {
 
 async function processor(source) {
     const measurands = await Measurand.getSupportedMeasurands(lookup);
-    await process_fixed_locations(source, measurands);
-    await process_mobile_locations(source, measurands);
+    const fixed = await process_fixed_locations(source, measurands);
+    const mobile = await process_mobile_locations(source, measurands);
+		return fixed;
 }
 
 async function process_fixed_locations(source, measurands) {
@@ -64,10 +65,11 @@ async function process_fixed_locations(source, measurands) {
     }
 
     await Promise.all(stations);
-    console.log(`ok - all ${stations.length} fixed stations pushed`);
+    //console.log(`ok - all ${stations.length} fixed stations pushed`);
 
     await Providers.put_measures(source.provider, measures);
-    console.log(`ok - all ${measures.length} fixed measures pushed`);
+    //console.log(`ok - all ${measures.length} fixed measures pushed`);
+		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function process_mobile_locations(source, measurands) {
@@ -119,10 +121,11 @@ async function process_mobile_locations(source, measurands) {
     }
 
     await Promise.all(stations);
-    console.log(`ok - all ${stations.length} mobile stations pushed`);
+    //console.log(`ok - all ${stations.length} mobile stations pushed`);
 
     await Providers.put_measures(source.provider, measures);
-    console.log(`ok - all ${measures.length} mobile measures pushed`);
+    //console.log(`ok - all ${measures.length} mobile measures pushed`);
+		return { locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
 }
 
 async function fixed_locations(source) {

@@ -56,7 +56,7 @@ class Providers {
      */
     async publish(message, subject) {
         console.log('Publishing:', subject, message);
-        if (process.env.TOPIC_ARN) {
+        if (process.env.TOPIC_ARN && message) {
             const cmd = new PublishCommand({
                 TopicArn: process.env.TOPIC_ARN,
                 Subject: subject,
@@ -111,20 +111,21 @@ class Providers {
                 prettyPrintStation(currentData);
             }
         } catch (err) {
-            if (err.statusCode !== 404) throw err;
+            if (err.Code !== 'NoSuchKey') throw err;
         }
 
         const compressedString = await gzip(newData);
 
         if (!DRYRUN) {
             if (VERBOSE) console.debug(`Saving station to ${Bucket}/${Key}`);
-            await putObject({
+            await putObject(
+								compressedString,
                 Bucket,
                 Key,
-                Body: compressedString,
-                ContentType: 'application/json',
-                ContentEncoding: 'gzip'
-            }).promise();
+                false,
+                'application/json',
+                'gzip'
+            );
         }
         if (VERBOSE) console.log(`finished station: ${providerStation}\n------------------------`);
     }
@@ -152,13 +153,7 @@ class Providers {
         }
         if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
 
-        return putObject({
-            Bucket,
-            Key,
-            Body: compressedString,
-            ContentType: 'text/csv',
-            ContentEncoding: 'gzip'
-        }).promise();
+        return await putObject(compressedString, Bucket, Key, false, 'text/csv', 'gzip');
     }
 }
 

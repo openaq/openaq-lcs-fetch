@@ -1,9 +1,10 @@
 {
-  "schema": "v1",
-  "provider": "purpleair",
-  "frequency": "minute",
-	"secretKey": "purpleair",
-  "meta": {
-    "url": "https://api.purpleair.com/"
-  }
+    "schema": "v1",
+    "provider": "purpleair",
+    "frequency": "minute",
+    "secretKey": "purpleair",
+    "active": false,
+    "meta": {
+        "url": "https://api.purpleair.com/"
+    }
 }

@@ -16,4 +16,5 @@ const fs = require('fs');
 /** @type {Source[]} */
 module.exports = fs.readdirSync(__dirname)
     .filter((f) => f.endsWith('.json'))
-    .map((f) => require(`./${f}`));
+    .map((f) => require(`./${f}`))
+		.filter((f) => f.active);

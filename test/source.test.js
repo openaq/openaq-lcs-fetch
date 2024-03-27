@@ -8,8 +8,8 @@ const ajv = new Ajv({
 });
 
 ajv.addMetaSchema(
-    require('ajv/lib/refs/json-schema-draft-04.json'),
-    'http://json-schema.org/draft-04/schema#'
+    require('ajv/lib/refs/json-schema-draft-07.json'),
+   'http://json-schema.org/draft-07/schema#'
 );
 
 const validate = ajv.compile(schema);
@@ -21,7 +21,7 @@ tape('validate', (t) => {
 
 // find all the sources, has to be synchronous for tape
 sources.forEach((source) => {
-    tape(`tests for ${source}`, (t) => {
+	  tape(`tests for ${source}`, (t) => {
         try {
             const valid = validate(source);
 

@@ -4,12 +4,20 @@ const request = promisify(require('request'));
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
+const https = require('https');
 
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
 
 const s3 = new S3Client({
-    maxRetries: 10
+    maxRetries: 10,
+		// requestHandler: new NodeHttpHandler({
+		// 		httpsAgent: new https.Agent({
+		// 				maxSockets: 1000
+		// 		}),
+		// 		socketAcquisitionWarningTimeout: 6000,
+		// })
 });
 
 const gzip = promisify(zlib.gzip);
@@ -31,8 +39,7 @@ async function getObject(Bucket, Key) {
     return currentData;
 }
 
-async function putObject(text, Bucket, Key, gzip = true, ContentType = 'application/json') {
-    let ContentEncoding = null;
+async function putObject(text, Bucket, Key, gzip = true, ContentType = 'application/json', ContentEncoding = null) {
     if (gzip) {
         text = await gzip(text);
         ContentEncoding = 'gzip';

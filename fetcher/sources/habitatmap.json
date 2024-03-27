@@ -1,8 +1,9 @@
 {
-  "schema": "v1",
-  "provider": "habitatmap",
-  "frequency": "minute",
-  "meta": {
-    "url": "http://aircasting.habitatmap.org"
-  }
+    "schema": "v1",
+    "provider": "habitatmap",
+    "frequency": "minute",
+    "active": true,
+    "meta": {
+        "url": "http://aircasting.habitatmap.org"
+    }
 }
