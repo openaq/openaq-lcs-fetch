@@ -4,12 +4,10 @@
  *     with the Google OAuth Service Account. https://stackoverflow.com/a/49965912/728583
  */
 
-const dayjs = require('dayjs');
-const pLimit = require('p-limit');
 
 const Providers = require('../lib/providers');
 const { VERBOSE, request } = require('../lib/utils');
-const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
+//const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 
@@ -31,269 +29,226 @@ class ClarityApi {
      * @param {Source} source
      * @param {Organization} org
      */
-    constructor(source, org) {
+    constructor(source) {
+        this.fetched = false;
         this.source = source;
-        this.org = org;
+        this._measurands = null;
+        this._measures = null;
+        this.datasources = {};
+        this.missing_datasources = [];
+        this.parameters = {
+            pm2_5ConcMassIndividual: [ 'pm25', 'ug/m3' ],
+        };
+        // holder for the locations
+        this.measures = new Measures(FixedMeasure);
+        this.locations = [];
     }
 
     get apiKey() {
-        return this.org.apiKey;
+        return this.source.apiKey;
     }
 
-    get orgId() {
-        return this.org.orgId;
+    get provider() {
+        return this.source.provider;
     }
 
     get baseUrl() {
-        return this.source.meta.url;
+        return "https://clarity-data-api.clarity.io";
     }
 
+    async fetchMeasurands() {
+        this.measurands = await Measurand.getIndexedSupportedMeasurands(this.parameters);
+    }
+
+    addToMissingDatasources(ds) {
+        if(!this.missing_datasources.includes(ds.datasourceId)) {
+            console.warn('Adding to missing datasources', ds);
+            this.missing_datasources.push(ds.datasourceId);
+        }
+    }
+
+
     /**
-     *
-     * @returns {Promise<Datasource[]>}
+     * Fetch the list of datasources and convert to object for reference later
+     * @returns {}
      */
-    listDatasources() {
-        return request({
+    async fetchDatasources() {
+        //const url = "https://openmap.clarity.io/api/measurements/current?reference=true&populate=device&withCharacteristics=pm2_5ConcMass";
+        const url = "https://clarity-data-api.clarity.io/v1/open/datasources";
+        const response = await request({
+            url,
             json: true,
             method: 'GET',
-            headers: { 'X-API-Key': this.apiKey },
-            url: new URL('v1/datasources', this.baseUrl)
-        }).then((response) => {
-            let ds = response.body;
-
-            if (process.env.SOURCEID) {
-                ds = ds.filter((d) => d.deviceCode === process.env.SOURCEID);
-            } else {
-                ds = ds.filter((d)=>d.sourceType === 'CLARITY_NODE');
-            }
-
-            if (VERBOSE) {
-                console.debug(`-------------------\nListing ${ds.length} sources for ${this.org.organizationName}`);
-                ds.map((d) => console.log(`${d.sourceType}: (${d.subscriptionStatus}) ${d.deviceCode} - ${d.name}`));
-            }
-            return ds;
+            headers: {
+                'X-API-Key': this.apiKey,
+                'Accept-Encoding': 'gzip'
+            },
+            gzip: true
         });
+        // const arr = response.body.filter(d => d.dataOrigin!='Reference Site');
+        // reshape to make it easier to use
+        console.debug(`Found ${Object.keys(response.body.datasources).length} datasources`);
+        this.datasources = response.body.datasources; //Object.assign({}, ...arr.map(item => ({[`${item.datasourceId}`]: item})));
+        return this.datasources;
     }
 
     /**
-     *
-     * @returns {Promise<Device[]>}
+     * Provide a sensor based ingest id
+     * @param {object} meas
+     * @param {object} measurand
+     * @returns {string}
      */
-    listDevices() {
-        return request({
+    getSensorId(meas) {
+        const measurand = this.measurands[meas.metric];
+        const datasource = this.datasources[meas.datasourceId];
+        if(!measurand) {
+            throw new Error(`Could not find measurand for ${meas.metric}`);
+        }
+        if(!datasource) {
+            this.addToMissingDatasources(meas);
+            throw new Error(`Could not find datasource for ${meas.datasourceId}/${meas.metric}`);
+        }
+        return `clarity-${datasource.datasourceId}-${measurand.parameter}`;
+    }
+
+    getLocationId(loc) {
+        //const datasource = this.datasources[loc.datasourceId];
+        //if(!datasource) {
+        //    this.addToMissingDatasources(loc);
+        //    throw new Error(`Could not find datasource for ${loc.datasourceId}`);
+        //}
+        //if(!datasource.deviceId) {
+        //    throw new Error(`Missing device id`);
+        //}
+        return `clarity-${loc.datasourceId}`;
+    }
+
+    getLabel(loc) {
+        const datasource = this.datasources[loc.datasourceId];
+        if(!datasource) {
+            this.addToMissingDatasources(loc.datasourceId);
+            throw new Error(`Could not find datasource for ${loc.datasourceId}`);
+        }
+        // still return a label even if we are missing one
+        return !!datasource.name ? datasource.name : 'Missing device name';
+    }
+
+    normalize(meas) {
+        const measurand = this.measurands[meas.metric];
+        return measurand.normalize_value(meas.value);
+    }
+
+    async fetchData() {
+        const dsurl = "/v1/open/all-recent-measurement/pm25/individual";
+        const url = `${this.baseUrl}${dsurl}`;
+
+        await this.fetchMeasurands();
+        await this.fetchDatasources();
+
+        const response = await request({
+            url,
             json: true,
             method: 'GET',
-            headers: { 'X-API-Key': this.apiKey },
-            url: new URL('v2/devices/nodes', this.baseUrl),
-            qs: { 'org': this.orgId }
-        }).then((response) => response.body).then((response) => {
-            if (process.env.SOURCEID) {
-                const sources = process.env.SOURCEID.split(',');
-                const total = response.length;
-                response = response.filter((d) => sources.includes(d.nodeId));
-                console.debug(`Limiting sensors to ${process.env.SOURCEID}, found ${response.length} of ${total}`);
-            }
-            const working = response.filter((o) => o.lifeStage.stage === 'working');
-            if (VERBOSE) {
-                console.debug(`-----------------\nListing devices for ${this.org.organizationName}\nFound ${response.length} total devices, ${working.length} working`);
-                response
-                    .filter((d) => d.lifeStage.stage !== 'working')
-                    .map((d) => console.log(`DEVICE: ${d.nodeId} - ${d.model} - ${d.lifeStage.stage}`));
-            }
-            return working;
+            headers: {
+                'X-API-Key': this.apiKey,
+                'Accept-Encoding': 'gzip'
+            },
+            gzip: true
         });
+
+        const measurements = response.body.data;
+        const datasources = response.body.locations;
+
+        console.debug(`Found ${measurements.length} measurements for ${datasources.length} datasources`);
+
+        // translate the dataources to locations
+        datasources.map(d => {
+            try {
+                this.locations.push({
+                    location: this.getLocationId(d),
+                    label: this.getLabel(d),
+                    lon: d.lon,
+                    lat: d.lat,
+                });
+            } catch (e) {
+                console.warn(`Error adding location: ${e.message}`);
+            }
+        });
+
+
+        measurements.map( m => {
+            // really seems like the measures.push method
+            // should handle the sensor/ingest id
+            // and the normalizing??
+            try {
+                this.measures.push({
+                    sensor_id: this.getSensorId(m),
+                    measure: this.normalize(m),
+                    timestamp: m.time,
+                    flags: { 'clarity/qc': m.qc }
+                });
+            } catch(e) {
+                // console.warn(`Error adding measurement: ${e.message}`);
+            }
+        });
+
+        if(this.missing_datasources.length) {
+            console.warn(`Could not find details for ${this.missing_datasources.length} datasources`, this.missing_datasources);
+        }
+
+        this.fetched = true;
     }
 
-    /**
-     *
-     * @returns {AugmentedDevice[]}
-     */
-    async listAugmentedDevices() {
-        const [devices, datasources] = await Promise.all([
-            this.listDevices(),
-            this.listDatasources()
-        ]);
-
-        const indexedDatasources = Object.assign(
-            {},
-            ...datasources.map((datasource) => ({
-                [datasource.deviceCode]: datasource
-            }))
-        );
-
-        return devices.map((device) => ({
-            ...indexedDatasources[device.nodeId],
-            ...device
-        }));
+    data() {
+        if(!this.fetched) {
+            console.warn('Data has not been fetched');
+        }
+        return {
+            meta: {
+                schema: 'v0.1',
+                source: 'clarity',
+                matching_method: 'source-spatial'
+            },
+            measures: this.measures.measures,
+            locations: this.locations,
+        };
     }
 
-    /**
-     *
-     * @param {String} code
-     * @param {dayjs.Dayjs} since
-     * @param {dayjs.Dayjs} to
-     * @yields {Measurement}
-     */
-    async *fetchMeasurements(code, since, to) {
-        if (VERBOSE)
-            console.log(
-                `--------------------\nFetching measurements for ${this.org.organizationName}/${code} since ${since} to ${to}`
-            );
-
-        const limit = 20000;
-        let offset = 0;
-
-        const url = new URL('v1/measurements', this.baseUrl);
-        url.searchParams.set('code', code);
-        url.searchParams.set('limit', limit);
-        url.searchParams.set('startTime', since.toISOString());
-        url.searchParams.set('endTime', to.toISOString());
-
-        while (true) {
-            url.searchParams.set('skip', offset);
-            if (VERBOSE) console.log(`Fetching ${url}&key=${this.apiKey}`);
-            const response = await request({
-                url,
-                json: true,
-                method: 'GET',
-                headers: { 'X-API-Key': this.apiKey, 'Accept-Encoding': 'gzip' },
-                gzip: true
-            });
-
-            if (response.statusCode !== 200) {
-                console.warn(`Fetch failed (${response.statusCode}) ${response.body.Message}: ${url}`);
-                break;
-            }
-
-            if (offset === 0 && response.body.length === 0) {
-                console.warn(`Fetch failed to return any data: ${code}`);
-                break;
-            }
-
-            for (const measurement of response.body) {
-                yield measurement;
-            }
-
-            // More data to fetch
-            if (response.body.length === limit) {
-                offset += limit;
-                continue;
-            }
-
-            if (VERBOSE)
-                console.log(
-                    `Got ${response.body.length} of ${limit} possible measurements for device ${code} at offset ${offset}, stopping pagination.`
-                );
-
-            break;
+    summary() {
+        if(!this.fetched) {
+            console.warn('Data has not been fetched');
+            return {
+                source_name: this.source.provider,
+                message: 'Data has not been fetched',
+            };
+        } else {
+            return {
+                source_name: this.source.provider,
+                locations: this.locations.length,
+                measures: this.measures.length,
+                from: this.measures.from,
+                to: this.measures.to
+            };
         }
     }
 
-    /**
-     *
-     * @param {*} supportedMeasurands
-     * @param {Dayjs} since
-     */
-    async sync(supportedMeasurands, since) {
-        // get all the devices, even if expired
-        let devices = await this.listAugmentedDevices();
 
-        if (VERBOSE) {
-            console.debug(`-----------------------\n Syncing ${this.source.provider}/${this.org.organizationName}`, devices.length);
-            devices.map( (d) => {
-                if (d.pairedAccessoryModules.length > 0) {
-                    console.debug(`--------------------\n Found device with ${d.length} modules`);
-                }
-            });
-        }
-        // Create one station per device
-        const stations = devices.map((device) =>
-            Providers.put_station(
-                this.source.provider,
-                new SensorNode({
-                    sensor_node_id: `${this.org.organizationName}-${device.nodeId}`,
-                    sensor_node_site_name: device.name || device.nodeId, // fall back to code when missing name
-                    sensor_node_geometry: device.location.coordinates,
-                    sensor_node_status: device.subscriptionStatus,
-                    sensor_node_source_name: this.source.provider, //
-                    sensor_node_site_description: this.org.organizationName,
-                    sensor_node_ismobile: false, // should remove this and just use instrument
-                    // sensor_node_instrument: device.model,
-                    sensor_node_deployed_date: device.lifeStage.when,
-                    sensor_system: new SensorSystem({
-                        sensor_system_manufacturer_name: this.source.provider,
-                        //   Create one sensor per characteristic
-                        sensors: [] // Object.values(supportedMeasurands)
-                            .map(
-                                (measurand) =>
-                                    new Sensor({
-                                        sensor_id: getSensorId(device, measurand),
-                                        measurand_parameter: measurand.parameter,
-                                        measurand_unit: measurand.normalized_unit
-                                    })
-                            )
-                    })
-                })
-            )
-        );
-
-        if (VERBOSE) console.debug(`Fetching measurements for ${devices.length} devices`);
-        // now remove the expired ones
-        devices = devices.filter((d)=>d.subscriptionStatus === 'active');
-        // Sequentially process readings for each device
-        const measures = new Measures(FixedMeasure);
-        let successes = 0;
-        for (const device of devices) {
-            let hasMeasures = 0;
-            const measurements = this.fetchMeasurements(
-                device.nodeId,
-                since.subtract(1.25, 'hour'),
-                since
-            );
-
-            for await (const measurement of measurements) {
-                const readings = Object.entries(measurement.characteristics);
-                for (const [type, { value }] of readings) {
-                    const measurand = supportedMeasurands[type];
-                    if (!measurand) continue;
-                    hasMeasures = 1;
-                    measures.push({
-                        sensor_id: getSensorId(device, measurand),
-                        measure: measurand.normalize_value(value),
-                        timestamp: measurement.time
-                    });
-                }
-            }
-            successes += hasMeasures;
-        }
-
-        if (successes < devices.length) {
-            console.warn(`There were ${successes} successful requests out of ${devices.length}\n------------------------------`);
-        }
-        await Promise.all([
-            ...stations,
-            Providers.put_measures(this.source.provider, measures)
-        ]);
-        const source_name = `${this.source.provider}-${this.org.orgId}`;
-        return { source_name, locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
-    }
 }
 
-function getSensorId(device, measurand) {
-    return `clarity-${device.nodeId}-${measurand.parameter}`;
-}
+
+
 
 module.exports = {
     async processor(source) {
-        const measurandsIndex = await Measurand.getIndexedSupportedMeasurands(lookup);
-        const now = dayjs();
-        const limit = pLimit(10); // Limit to amount of orgs being processed at any given time
 
-        return Promise.all(
-            source.organizations.map((org) =>
-                limit(() => new ClarityApi(source, org).sync(measurandsIndex, now))
-            )
-        );
+        // create new clarity object
+        const client = new ClarityApi(source);
+        // fetch and process the data
+        await client.fetchData();
+        // and then push it to the
+        Providers.put_measures_json(client.provider, client.data());
+
+        return client.summary();
     }
 };
 

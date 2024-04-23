@@ -154,6 +154,33 @@ class Providers {
 
         return await putObject(compressedString, Bucket, Key, false, 'text/csv', 'gzip');
     }
+
+    /**
+     * Given a measures object, save it to s3
+     *
+     * @param {string} provider The name of the provider (ie purpleair)
+     * @param {Measures} measures A measurements object of measures
+     * @param {string} id An optional identifier to use when creating filename
+     */
+    static async put_measures_json(provider, data, id) {
+        if (!data.measures.length && !data.locations.length) {
+            return console.warn('Nothing found, not uploading to S3.');
+        }
+        const Bucket = process.env.BUCKET;
+        const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
+        //const Key = `${process.env.STACK}/measures/${provider}/${filename}.json.gz`;
+        const Key = `local-testing/measures/${provider}/${filename}.json.gz`;
+        const compressedString = await gzip(JSON.stringify(data));
+
+
+        if (DRYRUN) {
+            console.log(`Would have saved ${data.measures.length} measurements and ${data.locations.length} stations to '${Bucket}/${Key}'`);
+            return new Promise((y) => y(true));
+        }
+        if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
+
+        return await putObject(compressedString, Bucket, Key, false, 'application/json', 'gzip');
+    }
 }
 
 module.exports = Providers;
