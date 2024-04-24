@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const dayjs = require('dayjs');
 const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
 
 const {
@@ -167,9 +168,10 @@ class Providers {
             return console.warn('Nothing found, not uploading to S3.');
         }
         const Bucket = process.env.BUCKET;
+        const today = dayjs().format('YYYY-MM-DD');
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
         //const Key = `${process.env.STACK}/measures/${provider}/${filename}.json.gz`;
-        const Key = `local-testing/measures/${provider}/${filename}.json.gz`;
+        const Key = `local-testing/measures/${provider}/${today}/${filename}.json.gz`;
         const compressedString = await gzip(JSON.stringify(data));
 
 
