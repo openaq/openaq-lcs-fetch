@@ -100,15 +100,10 @@ class ClarityApi {
      */
     getSensorId(meas) {
         const measurand = this.measurands[meas.metric];
-        const datasource = this.datasources[meas.datasourceId];
         if(!measurand) {
             throw new Error(`Could not find measurand for ${meas.metric}`);
         }
-        if(!datasource) {
-            this.addToMissingDatasources(meas);
-            throw new Error(`Could not find datasource for ${meas.datasourceId}/${meas.metric}`);
-        }
-        return `clarity-${datasource.datasourceId}-${measurand.parameter}`;
+        return `clarity-${meas.datasourceId}-${measurand.parameter}`;
     }
 
     getLocationId(loc) {
@@ -167,6 +162,7 @@ class ClarityApi {
                 this.locations.push({
                     location: this.getLocationId(d),
                     label: this.getLabel(d),
+                    ismobile: false,
                     lon: d.lon,
                     lat: d.lat,
                 });
@@ -207,7 +203,7 @@ class ClarityApi {
             meta: {
                 schema: 'v0.1',
                 source: 'clarity',
-                matching_method: 'source-spatial'
+                matching_method: 'ingest-id'
             },
             measures: this.measures.measures,
             locations: this.locations,

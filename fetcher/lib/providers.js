@@ -10,6 +10,7 @@ const {
     fetchSecret,
     getObject,
     putObject,
+    putFile,
     prettyPrintStation
 } = require('./utils');
 
@@ -149,6 +150,7 @@ class Providers {
 
         if (DRYRUN) {
             console.log(`Would have saved ${measures.length} measurements to '${Bucket}/${Key}'`);
+            putFile(compressedString, Key);
             return new Promise((y) => y(true));
         }
         if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
@@ -170,13 +172,13 @@ class Providers {
         const Bucket = process.env.BUCKET;
         const today = dayjs().format('YYYY-MM-DD');
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
-        //const Key = `${process.env.STACK}/measures/${provider}/${filename}.json.gz`;
-        const Key = `local-testing/measures/${provider}/${today}/${filename}.json.gz`;
+        const Key = `${process.env.STACK}/measures/${provider}/${today}/${filename}.json.gz`;
         const compressedString = await gzip(JSON.stringify(data));
 
 
         if (DRYRUN) {
             console.log(`Would have saved ${data.measures.length} measurements and ${data.locations.length} stations to '${Bucket}/${Key}'`);
+            putFile(compressedString, Key);
             return new Promise((y) => y(true));
         }
         if (VERBOSE) console.debug(`Saving measurements to ${Bucket}/${Key}`);
