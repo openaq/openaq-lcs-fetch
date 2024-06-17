@@ -7,7 +7,6 @@
 
 const Providers = require('../lib/providers');
 const { VERBOSE, request } = require('../lib/utils');
-//const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 

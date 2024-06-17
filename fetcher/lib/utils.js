@@ -3,6 +3,7 @@ const { promisify } = require('util');
 const request = promisify(require('request'));
 const fs = require('node:fs');
 const path = require('path');
+const homedir = require('os').homedir();
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -72,7 +73,7 @@ async function putObject(text, Bucket, Key, gzip = true, ContentType = 'applicat
  * @param {} key
  */
 async function putFile(text, key) {
-    let fpath = `/home/christian/Downloads/${key}`;
+    const fpath = path.join(homedir, `Downloads/${key}`);
     await fs.mkdirSync(path.dirname(fpath), { recursive: true });
     await fs.writeFileSync(fpath, text);
 }
