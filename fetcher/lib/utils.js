@@ -69,8 +69,8 @@ async function putObject(text, Bucket, Key, gzip = true, ContentType = 'applicat
 
 /**
  *
- * @param {} text
- * @param {} key
+ * @param {string} text the string to be saved to a file
+ * @param {string} key the the file path. Usually the same key that would be used in the cloud storage
  */
 async function putFile(text, key) {
     const fpath = path.join(homedir, `Downloads/${key}`);

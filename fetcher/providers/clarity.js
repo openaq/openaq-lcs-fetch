@@ -6,20 +6,9 @@
 
 
 const Providers = require('../lib/providers');
-const { VERBOSE, request } = require('../lib/utils');
+const { request } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
-
-const lookup = {
-    relHumid: ['relativehumidity', '%'], // RelativeHumidity
-    temperature: ['temperature', 'c'], // Temperature
-    pm2_5ConcMass: ['pm25', 'μg/m3'], //  PM2.5 mass concentration
-    pm1ConcMass: ['pm1', 'μg/m3'], // PM1 mass concentration
-    pm10ConcMass: ['pm10', 'μg/m3'], // PM10 mass concentration
-    no2Conc: ['no2', 'ppb'], // NO2 volume concentration
-    windSpeed: ['windspeed', 'm/s'], // Wind speed
-    windDirection: ['winddirection', 'degrees'] //  Wind direction, compass degrees (0°=North, then clockwise)
-};
 
 
 class ClarityApi {
@@ -36,7 +25,7 @@ class ClarityApi {
         this.datasources = {};
         this.missing_datasources = [];
         this.parameters = {
-            pm2_5ConcMassIndividual: [ 'pm25', 'ug/m3' ],
+            pm2_5ConcMassIndividual: ['pm25', 'ug/m3']
         };
         // holder for the locations
         this.measures = new Measures(FixedMeasure);
@@ -52,7 +41,7 @@ class ClarityApi {
     }
 
     get baseUrl() {
-        return "https://clarity-data-api.clarity.io";
+        return 'https://clarity-data-api.clarity.io';
     }
 
     async fetchMeasurands() {
@@ -60,7 +49,7 @@ class ClarityApi {
     }
 
     addToMissingDatasources(ds) {
-        if(!this.missing_datasources.includes(ds.datasourceId)) {
+        if (!this.missing_datasources.includes(ds.datasourceId)) {
             console.warn('Adding to missing datasources', ds);
             this.missing_datasources.push(ds.datasourceId);
         }
@@ -69,11 +58,10 @@ class ClarityApi {
 
     /**
      * Fetch the list of datasources and convert to object for reference later
-     * @returns {}
+     * @returns {array} a list of datasources
      */
     async fetchDatasources() {
-        //const url = "https://openmap.clarity.io/api/measurements/current?reference=true&populate=device&withCharacteristics=pm2_5ConcMass";
-        const url = "https://clarity-data-api.clarity.io/v1/open/datasources";
+        const url = 'https://clarity-data-api.clarity.io/v1/open/datasources';
         const response = await request({
             url,
             json: true,
@@ -87,7 +75,7 @@ class ClarityApi {
         // const arr = response.body.filter(d => d.dataOrigin!='Reference Site');
         // reshape to make it easier to use
         console.debug(`Found ${Object.keys(response.body.datasources).length} datasources`);
-        this.datasources = response.body.datasources; //Object.assign({}, ...arr.map(item => ({[`${item.datasourceId}`]: item})));
+        this.datasources = response.body.datasources; // Object.assign({}, ...arr.map(item => ({[`${item.datasourceId}`]: item})));
         return this.datasources;
     }
 
@@ -99,32 +87,24 @@ class ClarityApi {
      */
     getSensorId(meas) {
         const measurand = this.measurands[meas.metric];
-        if(!measurand) {
+        if (!measurand) {
             throw new Error(`Could not find measurand for ${meas.metric}`);
         }
         return `clarity-${meas.datasourceId}-${measurand.parameter}`;
     }
 
     getLocationId(loc) {
-        //const datasource = this.datasources[loc.datasourceId];
-        //if(!datasource) {
-        //    this.addToMissingDatasources(loc);
-        //    throw new Error(`Could not find datasource for ${loc.datasourceId}`);
-        //}
-        //if(!datasource.deviceId) {
-        //    throw new Error(`Missing device id`);
-        //}
         return `clarity-${loc.datasourceId}`;
     }
 
     getLabel(loc) {
         const datasource = this.datasources[loc.datasourceId];
-        if(!datasource) {
+        if (!datasource) {
             this.addToMissingDatasources(loc.datasourceId);
             throw new Error(`Could not find datasource for ${loc.datasourceId}`);
         }
         // still return a label even if we are missing one
-        return !!datasource.name ? datasource.name : 'Missing device name';
+        return datasource.name ? datasource.name : 'Missing device name';
     }
 
     normalize(meas) {
@@ -133,7 +113,7 @@ class ClarityApi {
     }
 
     async fetchData() {
-        const dsurl = "/v1/open/all-recent-measurement/pm25/individual";
+        const dsurl = '/v1/open/all-recent-measurement/pm25/individual';
         const url = `${this.baseUrl}${dsurl}`;
 
         await this.fetchMeasurands();
@@ -156,14 +136,14 @@ class ClarityApi {
         console.debug(`Found ${measurements.length} measurements for ${datasources.length} datasources`);
 
         // translate the dataources to locations
-        datasources.map(d => {
+        datasources.map((d) => {
             try {
                 this.locations.push({
                     location: this.getLocationId(d),
                     label: this.getLabel(d),
                     ismobile: false,
                     lon: d.lon,
-                    lat: d.lat,
+                    lat: d.lat
                 });
             } catch (e) {
                 console.warn(`Error adding location: ${e.message}`);
@@ -171,7 +151,7 @@ class ClarityApi {
         });
 
 
-        measurements.map( m => {
+        measurements.map( (m) => {
             // really seems like the measures.push method
             // should handle the sensor/ingest id
             // and the normalizing??
@@ -182,12 +162,12 @@ class ClarityApi {
                     timestamp: m.time,
                     flags: { 'clarity/qc': m.qc }
                 });
-            } catch(e) {
+            } catch (e) {
                 // console.warn(`Error adding measurement: ${e.message}`);
             }
         });
 
-        if(this.missing_datasources.length) {
+        if (this.missing_datasources.length) {
             console.warn(`Could not find details for ${this.missing_datasources.length} datasources`, this.missing_datasources);
         }
 
@@ -195,7 +175,7 @@ class ClarityApi {
     }
 
     data() {
-        if(!this.fetched) {
+        if (!this.fetched) {
             console.warn('Data has not been fetched');
         }
         return {
@@ -205,16 +185,16 @@ class ClarityApi {
                 matching_method: 'ingest-id'
             },
             measures: this.measures.measures,
-            locations: this.locations,
+            locations: this.locations
         };
     }
 
     summary() {
-        if(!this.fetched) {
+        if (!this.fetched) {
             console.warn('Data has not been fetched');
             return {
                 source_name: this.source.provider,
-                message: 'Data has not been fetched',
+                message: 'Data has not been fetched'
             };
         } else {
             return {

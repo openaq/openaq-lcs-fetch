@@ -162,7 +162,7 @@ class Providers {
      * Given a measures object, save it to s3
      *
      * @param {string} provider The name of the provider (ie purpleair)
-     * @param {Measures} measures A measurements object of measures
+     * @param {Measures} data A object with measures
      * @param {string} id An optional identifier to use when creating filename
      */
     static async put_measures_json(provider, data, id) {
