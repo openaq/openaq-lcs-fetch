@@ -24,6 +24,7 @@ class Measures {
         if (!this.from || measure.timestamp < this.from) {
             this.from = measure.timestamp;
         }
+
         this.measures.push(measure);
     }
 

@@ -1,6 +1,9 @@
 const zlib = require('zlib');
 const { promisify } = require('util');
 const request = promisify(require('request'));
+const fs = require('node:fs');
+const path = require('path');
+const homedir = require('os').homedir();
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -62,6 +65,20 @@ async function putObject(text, Bucket, Key, gzip = true, ContentType = 'applicat
     });
     return await s3.send(cmd);
 }
+
+
+/**
+ *
+ * @param {string} text the string to be saved to a file
+ * @param {string} key the the file path. Usually the same key that would be used in the cloud storage
+ */
+async function putFile(text, key) {
+    const fpath = path.join(homedir, `Downloads/${key}`);
+    await fs.mkdirSync(path.dirname(fpath), { recursive: true });
+    await fs.writeFileSync(fpath, text);
+}
+
+
 
 /**
  * Retrieve secret from AWS Secrets Manager
@@ -199,6 +216,7 @@ module.exports = {
     DRYRUN,
     getObject,
     putObject,
+    putFile,
     prettyPrintStation,
     checkResponseData
 };
