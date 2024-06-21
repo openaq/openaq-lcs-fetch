@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "smartsense",
+    "frequency": "hour",
+    "secretKey": "smartsense-key",
+    "active": true,
+    "meta": {
+        "url": "https://api.smart-airq.com/api/state"
+    }
+}
