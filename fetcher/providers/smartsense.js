@@ -121,7 +121,7 @@ class SmartSenseApi {
                     measure: measure,
                     timestamp: new Date(o.timestamp).toISOString()
                 });
-            })
+            });
         });
         this.fetched = true;
     }
