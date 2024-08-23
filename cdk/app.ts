@@ -12,7 +12,7 @@ const stack = new EtlPipeline(app, "lcs-etl-pipeline", {
   sources: require('../fetcher/sources'),
   bucketName: process.env.BUCKET || 'openaq-fetches',
   lcsApi: process.env.LCS_API || 'https://api.openaq.org',
-  topicArn: process.env.TOPIC_ARN
+  topicArn: process.env.TOPIC_ARN || "arn:aws:sns:us-east-1:470049585876:NewFetchResults"
 });
 
 

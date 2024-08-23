@@ -22,7 +22,7 @@ const lookup = {
 
 
 async function getDevices(source) {
-    const url = new URL('/public/api/v1/world/locations/measures/current', source.meta.url);
+    const url = new URL('/public/api/v1/openaq/locations/measures/current', source.meta.url);
     url.searchParams.append('token', source.token);
     const { body } = await request({
         json: true,
@@ -141,7 +141,7 @@ async function processor(source) {
 
 async function fetchSensorData(source, locationId) {
     // /world/locations/{locationId}/measures/last/buckets/{period}
-    const url = new URL(`/public/api/v1/world/locations/${locationId}/measures/last/buckets/60`, source.meta.url);
+    const url = new URL(`/public/api/v1/openaq/locations/${locationId}/measures/last/buckets/60`, source.meta.url);
     url.searchParams.append('token', source.token);
     let response = {};
     const { body, statusCode } = await request({
