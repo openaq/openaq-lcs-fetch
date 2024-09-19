@@ -210,10 +210,16 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
 const fetchFileLocal = async (file) => {
     const filepath = file.path;
     const data = [];
-    return new Promise((resolve) => {
+    console.debug('fetching file', filepath);
+    return new Promise((resolve, reject) => {
         fs.createReadStream(filepath)
+            .on('error', (e) => {
+                reject(e);
+            })
             .pipe(csv())
-            .on('data', (row) => data.push(row))
+            .on('data', (row) => {
+                data.push(row);
+            })
             .on('end', () => {
                 resolve(data);
             });
@@ -223,8 +229,10 @@ const fetchFileLocal = async (file) => {
 const fetchFile = async (file) => {
     const source = file.source;
     let data;
-    if (source === 'local') {
+    if (['local','undefined',undefined,null].includes(source)) {
         data = await fetchFileLocal(file);
+    } else {
+        throw new Error(`No support for ${source}`);
     }
     return data;
 };

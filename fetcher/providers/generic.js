@@ -376,6 +376,9 @@ class Client {
      */
     async processData(file) {
         const data = await this.fetchData(file);
+        if (!data) {
+            throw new Error('No data was returned from file');
+        }
         if (file.type === 'locations') {
             this.processLocationsData(data);
         } else if (file.type === 'sensors') {
