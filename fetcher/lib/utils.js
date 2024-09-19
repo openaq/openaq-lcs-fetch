@@ -12,6 +12,7 @@ const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/clien
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
 
+
 const s3 = new S3Client({
     maxRetries: 10
 });
@@ -186,11 +187,11 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     const fdata = data.filter((d) => {
         return (
             (d.time / 1000 >= start_timestamp || !start_timestamp) &&
-      d.time / 1000 <= end_timestamp
+                d.time / 1000 <= end_timestamp
         );
     });
     if (fdata.length < n) {
-    // submit warning so we can track this
+        // submit warning so we can track this
         const requested_start = new Date(
             start_timestamp * 1000
         ).toISOString();
@@ -206,33 +207,27 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     return fdata;
 }
 
-async function fetchFile(file) {
-  const source = file.source;
-	var data;
-  if(source == 'google-bucket') {
-	  data = await fetchFileGoogleBucket(file);
-  } else {
-	  data = await fetchFileLocal(file);
-  }
-	if(DRYRUN) {
-			//writeJson(data, `raw/${file.path}`)
-	}
-	return data;
+const fetchFileLocal = async (file) => {
+    const filepath = file.path;
+    const data = [];
+    return new Promise((resolve) => {
+        fs.createReadStream(filepath)
+            .pipe(csv())
+            .on('data', (row) => data.push(row))
+            .on('end', () => {
+                resolve(data);
+            });
+    });
 };
 
-const fetchFileLocal = async file => {
-  const filepath = file.path;
-  const data = [];
-  return new Promise((resolve, reject) => {
-	  fs.createReadStream(filepath)
-      .pipe(csv())
-      .on('data', row => data.push(row))
-      .on('end', () => {
-		    resolve(data);
-      });
-  });
+const fetchFile = async (file) => {
+    const source = file.source;
+    let data;
+    if (source === 'local') {
+        data = await fetchFileLocal(file);
+    }
+    return data;
 };
-
 
 module.exports = {
     fetchSecret,

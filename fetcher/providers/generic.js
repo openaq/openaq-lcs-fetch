@@ -1,5 +1,5 @@
 const Providers = require('../lib/providers');
-const { request, fetchFile } = require('../lib/utils');
+const { fetchFile } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 
@@ -15,7 +15,7 @@ const truthy = (value) => {
  * @returns {*} - stripped value
  */
 const stripWhitespace = (value) => {
-    if(typeof(value) == 'string') {
+    if (typeof(value) === 'string') {
         return value.replace(/^[ ]+|[ ]+$/,'');
     } else {
         return value;
@@ -60,18 +60,17 @@ const stripNulls = (obj) => {
  * @param {*} target - Most likely the class object (this)
  * @param {*} data - The values that we are assiging to the target
  * @param {*[]} [accepted=[]] - I list of keys that will be accepted to the metadata
- * @returns {*} -
  */
 const classAssign = (target, data, accepted = []) => {
     const keys = Object.keys(target);
-    for( const [k,v] of Object.entries(data)) {
-        if(keys.includes(k)) {
+    for ( const [k,v] of Object.entries(data)) {
+        if (keys.includes(k)) {
             target[k] = stripWhitespace(v);
-        } else if(accepted.includes(k)) {
-            if(!target.metadata) target.metadata = {};
+        } else if (accepted.includes(k)) {
+            if (!target.metadata) target.metadata = {};
             target.metadata[k] = stripWhitespace(v);
         }
-    };
+    }
 };
 
 
@@ -101,13 +100,13 @@ class Location {
      */
     getSystem(data) {
         let key;
-        if(typeof(data) == 'string') {
+        if (typeof(data) === 'string') {
             key = data;
             data = { system_id: key };
         } else {
             key = data.system_id;
         }
-        if(!this.systems[key]) {
+        if (!this.systems[key]) {
             this.systems[key] = new System({ ...data });
         }
         return this.systems[key];
@@ -122,11 +121,8 @@ class Location {
     add(sensor) {
         // first we get the system name
         // e.g. :provider/:site/:manufacturer-:model
-        const sensor_id = sensor.sensor_id;
-        const system_id = sensor.system_id;
         const sys = this.getSystem(sensor);
-        const s = sys.add(sensor);
-        return s;
+        return sys.add(sensor);
     }
 
     /**
@@ -141,7 +137,7 @@ class Location {
             lon: this.lon,
             ismobile: this.ismobile,
             metadata: this.metadata,
-            systems: Object.values(this.systems).map(s => s.json()),
+            systems: Object.values(this.systems).map((s) => s.json()),
         });
     }
 }
@@ -168,7 +164,7 @@ class System {
      */
     add(sensor) {
         const sensor_id = sensor.sensor_id;
-        if(!this.sensors[sensor_id]) {
+        if (!this.sensors[sensor_id]) {
             this.sensors[sensor_id] = new Sensor(sensor);
         }
         return this.sensors[sensor_id];
@@ -183,7 +179,7 @@ class System {
             system_id: this.system_id,
             manufacturer_name: this.manufacturer_name,
             model_name: this.model_name,
-            sensors: Object.values(this.sensors).map(s => s.json()),
+            sensors: Object.values(this.sensors).map((s) => s.json()),
         });
     }
 
@@ -277,10 +273,10 @@ class Client {
         const model = cleanKey(row[this.model_key]);
         const location_id = this.getLocationId(row);
         let key = null;
-        if(manufacturer && model) {
-            key = `${manufacturer}::${model}`;;
-        } else if(!manufacturer & !model) {
-            key = `default`;
+        if (manufacturer && model) {
+            key = `${manufacturer}::${model}`;
+        } else if (!manufacturer & !model) {
+            key = 'default';
         } else {
             key = `${manufacturer || model}`;
         }
@@ -323,12 +319,12 @@ class Client {
     getLocation(key) {
         let loc = null;
         let data = {};
-        if(typeof(key) == 'object') {
+        if (typeof(key) === 'object') {
             data = { ...key };
             key = this.getLocationId(data);
         }
         loc = this.locations[key];
-        if(!loc) {
+        if (!loc) {
             loc = this.addLocation({ location_id: key, ...data });
         }
 
@@ -370,7 +366,7 @@ class Client {
         // if its binary than it should be an uploaded file
         // if its an object then ...
         return fetchFile(f);
-    };
+    }
 
 
     /**
@@ -380,13 +376,13 @@ class Client {
      */
     async processData(file) {
         const data = await this.fetchData(file);
-        if(file.type == 'locations') {
+        if (file.type === 'locations') {
             this.processLocationsData(data);
-        } else if(file.type == "sensors") {
+        } else if (file.type === 'sensors') {
             this.processSensorsData(data);
-        } else if(file.type == "measurements") {
+        } else if (file.type === 'measurements') {
             this.processMeasurementsData(data);
-        } else if(file.type == "flags") {
+        } else if (file.type === 'flags') {
             this.processFlagsData(data);
         }
     }
@@ -399,7 +395,7 @@ class Client {
      */
     addLocation(data) {
         const key = this.getLocationId(data);
-        if(!this.locations[key]) {
+        if (!this.locations[key]) {
             this.locations[key] = new Location({
                 location_id: key,
                 label: this.getLabel(data),
@@ -435,7 +431,6 @@ class Client {
      */
     async processSensorsData(sensors) {
         console.debug(`Processing ${sensors.length} sensors`);
-        const sensor_attributes = ['manufacturer_name', 'model_name', 'interval_seconds'];
         sensors.map((d) => {
             try {
 
@@ -466,10 +461,10 @@ class Client {
         let params = [];
         let long_format = false;
 
-        if(measurements.length) {
+        if (measurements.length) {
             const keys = Object.keys(measurements[0]);
             long_format = keys.includes(this.parameter_key) && keys.includes(this.value_key);
-            if(long_format) {
+            if (long_format) {
                 params = [this.parameter_key];
             } else {
                 params = Object.keys(this.parameters);
@@ -480,7 +475,7 @@ class Client {
             try {
                 const datetime = this.getDatetime(meas);
                 const location = meas[this.location_key];
-                params.map( p => {
+                params.map((p) => {
                     const value = long_format ? meas[this.value_key] : meas[p];
                     const metric = long_format ? meas[p] : p;
                     const m = {
@@ -488,7 +483,7 @@ class Client {
                         value,
                         metric,
                     };
-                    if(m.value) {
+                    if (m.value) {
                         this.measures.push({
                             sensor_id: this.getSensorId(m),
                             timestamp: datetime,
@@ -513,6 +508,7 @@ class Client {
         flags.map((d) => {
             try {
                 // coming soon
+                console.log(d);
             } catch (e) {
                 console.warn(`Error adding flag: ${e.message}`);
             }
@@ -533,7 +529,7 @@ class Client {
                 matching_method: 'ingest-id'
             },
             measures: this.measures.measures,
-            locations: Object.values(this.locations).map(l=>l.json())
+            locations: Object.values(this.locations).map((l)=>l.json())
         };
     }
 
@@ -573,9 +569,9 @@ module.exports = {
             await client.processData(file);
         }));
         // fetch and process the data
-        //await client.fetchData();
+        // await client.fetchData();
         // and then push it to the
-        //console.dir(client.data(), { depth: null });
+        // console.dir(client.data(), { depth: null });
         Providers.put_measures_json(client.provider, client.data());
         return client.summary();
     },

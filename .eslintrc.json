@@ -12,7 +12,7 @@
         "no-var": "error",
         "prefer-const": "error",
         "array-bracket-spacing": [ "error", "never" ],
-        "comma-dangle": [ "error", "never" ],
+        "comma-dangle": [ "error", "only-multiline" ],
         "computed-property-spacing": [ "error", "never" ],
         "eol-last": "error",
         "eqeqeq": [ "error", "smart" ],

@@ -52,7 +52,7 @@ class SmartSenseApi {
     /**
      * Provide a sensor based ingest id
      * @param {object} meas
-     * @param {object} measurand
+     * @param {object} uid
      * @returns {string}
      */
     getSensorId(meas, uid) {
