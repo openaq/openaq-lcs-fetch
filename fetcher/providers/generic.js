@@ -195,7 +195,10 @@ class Sensor {
         this.sensor_id = data.sensor_id;
         this.parameter = null;
         this.interval_seconds = null;
-        this.metadata = {};
+        this.version_date = null;
+        this.instance = null;
+        this.status = null;
+        this.metadata = null;
         classAssign(this, data, []);
     }
 
@@ -206,6 +209,9 @@ class Sensor {
     json() {
         return stripNulls({
             sensor_id: this.sensor_id,
+            version_date: this.version_date,
+            status: this.status,
+            instance: this.instance,
             parameter: this.parameter,
             interval_seconds: this.interval_seconds,
         });
@@ -274,7 +280,7 @@ class Client {
         const location_id = this.getLocationId(row);
         let key = null;
         if (manufacturer && model) {
-            key = `${manufacturer}::${model}`;
+            key = `${manufacturer}:${model}`;
         } else if (!manufacturer & !model) {
             key = 'default';
         } else {
@@ -292,10 +298,15 @@ class Client {
     getSensorId(row) {
         const measurand = this.measurands[row.metric];
         const location_id = this.getLocationId(row);
+        const version = cleanKey(row.version_date);
+        const instance = cleanKey(row.instance);
         if (!measurand) {
             throw new Error(`Could not find measurand for ${row.metric}`);
         }
-        return `${location_id}-${measurand.parameter}`;
+        let key = [measurand.parameter];
+        if (instance) key.push(instance);
+        if (version) key.push(version);
+        return `${location_id}-${key.join(':')}`;
     }
 
 
@@ -440,6 +451,7 @@ class Client {
                 const sensor_id = this.getSensorId({
                     location: d[this.location_key],
                     metric: d[this.parameter_key],
+                    ...d,
                 });
 
                 const system_id = this.getSystemId(d);
