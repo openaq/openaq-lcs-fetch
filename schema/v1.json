@@ -23,8 +23,12 @@
             "enum": [
                 "minute",
                 "hour",
-                "day"
+                "day",
+                "upload"
             ]
+        },
+        "processor": {
+            "type": "string"
         },
         "secretKey": {
             "type": "string"
@@ -36,6 +40,9 @@
             "type": "string"
         },
         "meta": {
+            "type": "object"
+        },
+        "parameters": {
             "type": "object"
         }
     }

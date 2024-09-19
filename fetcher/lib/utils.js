@@ -4,6 +4,7 @@ const request = promisify(require('request'));
 const fs = require('node:fs');
 const path = require('path');
 const homedir = require('os').homedir();
+const csv = require('csv-parser');
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
@@ -205,9 +206,37 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     return fdata;
 }
 
+async function fetchFile(file) {
+  const source = file.source;
+	var data;
+  if(source == 'google-bucket') {
+	  data = await fetchFileGoogleBucket(file);
+  } else {
+	  data = await fetchFileLocal(file);
+  }
+	if(DRYRUN) {
+			//writeJson(data, `raw/${file.path}`)
+	}
+	return data;
+};
+
+const fetchFileLocal = async file => {
+  const filepath = file.path;
+  const data = [];
+  return new Promise((resolve, reject) => {
+	  fs.createReadStream(filepath)
+      .pipe(csv())
+      .on('data', row => data.push(row))
+      .on('end', () => {
+		    resolve(data);
+      });
+  });
+};
+
 
 module.exports = {
     fetchSecret,
+    fetchFile,
     request,
     toCamelCase,
     gzip,

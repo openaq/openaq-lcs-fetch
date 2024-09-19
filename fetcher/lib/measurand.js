@@ -47,7 +47,7 @@ class Measurand {
         // Fetch from API
         const supportedMeasurandParameters = [
             'pm10',
-            'pm25','o3','co','no2','so2','no2','co','so2','o3','bc','co2','no2','bc','pm1','co2','wind_direction','nox','no','rh','nox','ch4','pn','o3','ufp','wind_speed','no','pm','ambient_temp','pressure','pm25-old','relativehumidity','temperature','so2','co','um003','um010','temperature','um050','um025','pm100','pressure','um005','humidity','um100','voc','ozone','nox','bc','no','pm4','so4','ec','oc','cl','no3','pm25'];
+            'pm25','o3','co','no2','so2','no2','co','so2','o3','bc','co2','no2','bc','pm1','co2','wind_direction','nox','no','rh','nox','ch4','pn','o3','ufp','wind_speed','no','pm','ambient_temp','pressure','pm25-old','relativehumidity','temperature','so2','co','um003','um010','temperature','um050','um025','pm100','pressure','um005','humidity','um100','voc','ozone','nox','bc','no','pm4','so4','ec','oc','cl','no3','pm25','bc_375','bc_470','bc_528','bc_625','bc_880', 'as', 'cd', 'fe', 'k', 'ni', 'pb', 'v'];
 
         // Filter provided lookups
         const supportedLookups = Object.entries(lookups).filter(
