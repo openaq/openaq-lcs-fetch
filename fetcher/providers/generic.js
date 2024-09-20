@@ -2,7 +2,10 @@ const Providers = require('../lib/providers');
 const { fetchFile } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
 
+dayjs.extend(utc);
 
 const truthy = (value) => {
     return [1,true,'TRUE','T','True','t','true'].includes(value);
@@ -239,6 +242,7 @@ class Client {
         this.manufacturer_key = source.meta.manufacturer_key || 'manufacturer_name';
         this.model_key = source.meta.model_key || 'model_name';
         this.datetime_key = source.meta.timestamp_key || 'datetime';
+        this.datetime_format = 'YYYY-MM-DD HH-mm-ss';
         this.timezone = source.meta.timezone || 'UTC';
         this.datasources = {};
         this.missing_datasources = [];
@@ -247,6 +251,7 @@ class Client {
         this.measurands = null;
         this.measures = new Measures(FixedMeasure);
         this.locations = {};
+        this.log = {}; // track errors and warnings to provide later
     }
 
     get provider() {
@@ -278,15 +283,15 @@ class Client {
         const manufacturer = cleanKey(row[this.manufacturer_key]);
         const model = cleanKey(row[this.model_key]);
         const location_id = this.getLocationId(row);
-        let key = null;
+        let key = '';
         if (manufacturer && model) {
-            key = `${manufacturer}:${model}`;
+            key = `-${manufacturer}:${model}`;
         } else if (!manufacturer & !model) {
-            key = 'default';
+            // key = 'default';
         } else {
-            key = `${manufacturer || model}`;
+            key = `-${manufacturer || model}`;
         }
-        return `${location_id}-${key}`;
+        return `${location_id}${key}`;
     }
 
     /**
@@ -303,7 +308,7 @@ class Client {
         if (!measurand) {
             throw new Error(`Could not find measurand for ${row.metric}`);
         }
-        let key = [measurand.parameter];
+        const key = [measurand.parameter];
         if (instance) key.push(instance);
         if (version) key.push(version);
         return `${location_id}-${key.join(':')}`;
@@ -360,7 +365,7 @@ class Client {
      * @returns {string} - formated timestamp string
      */
     getDatetime (row) {
-        return row[this.datetime_key];
+        return dayjs.utc(row[this.datetime_key], this.datetime_format);
     }
 
     /**
@@ -379,6 +384,12 @@ class Client {
         return fetchFile(f);
     }
 
+    logMessage(type, message, err) {
+        // check if warning or error
+        // if strict than throw error, otherwise just log for later
+        if(!this.log[type]) this.log[type] = [];
+        this.log[type].push({ message, err});
+    }
 
     /**
      * Entry point for processing data
@@ -459,7 +470,7 @@ class Client {
                 location.add({ sensor_id, system_id, ...d });
 
             } catch (e) {
-                console.warn(`Error adding sensor: ${e.message}`);
+                this.logMessage(`Error adding sensor: ${e.message}`, 'error');
             }
         });
     }
@@ -504,10 +515,12 @@ class Client {
                             timestamp: datetime,
                             measure: this.normalize(m),
                         });
+                    } else {
+                        this.logMessage('VALUE_NOT_FOUND', 'error');
                     }
                 });
             } catch (e) {
-                console.warn(`Error adding measurement: ${e.message}`);
+                this.logMessage('MEASUREMENT_ERROR', 'error', e);
             }
         });
     }
@@ -543,7 +556,7 @@ class Client {
                 source: this.provider,
                 matching_method: 'ingest-id'
             },
-            measures: this.measures.measures,
+            measures: this.measures.json(),
             locations: Object.values(this.locations).map((l)=>l.json())
         };
     }
@@ -554,12 +567,17 @@ class Client {
      * @returns {object} - json summary object
      */
     summary() {
+        const error_summary = {};
+        Object.keys(this.log).map((k) => error_summary[k] = this.log[k].length);
         return {
             source_name: this.provider,
             locations: Object.values(this.locations).length,
+            systems: Object.values(this.locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
+            sensors: Object.values(this.locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
             measures: this.measures.length,
-            from: this.measures.from,
-            to: this.measures.to
+            errors: error_summary,
+            from: this.measures.from.utc().format(),
+            to: this.measures.to.utc().format(),
         };
     }
 }
