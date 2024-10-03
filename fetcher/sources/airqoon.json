@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "airqoon",
+    "frequency": "hour",
+    "secretKey": "airqoon-credentials",
+    "active": true,
+    "meta": {
+        "url": "https://base-external-api.airqoon.com"
+    }
+}
