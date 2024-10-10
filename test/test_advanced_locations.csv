@@ -1,0 +1,3 @@
+location,lat,lng,ismobile,project,city,state,country
+Test Site #1,45.56,-125.45,false,test set,portland,or,usa
+Test Site #2,47.56,-124.45,false,test set,portland,or,usa

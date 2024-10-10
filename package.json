@@ -27,7 +27,7 @@
     ],
     "license": "MIT",
     "scripts": {
-        "test": "tape test/**.test.js | tap-dot",
+        "test": "tape test/**.test.js | colortape",
         "lint": "eslint 'fetcher/*.js' 'fetcher/!(node_modules)/**/*.js' scheduler/**/*.js",
         "doc": "documentation serve -w fetcher/**/*.js"
     },
@@ -53,6 +53,7 @@
         "ajv": "^8.12.0",
         "aws-cdk": "^2.129.0",
         "aws-cdk-lib": "^2.129.0",
+        "colortape": "^0.1.2",
         "constructs": "^10.3.0",
         "documentation": "^14.0.3",
         "eslint": "^8.56.0",

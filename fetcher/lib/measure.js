@@ -32,6 +32,14 @@ class Measures {
         return this.measures.length;
     }
 
+    json() {
+        return this.measures.map((m) => ({
+            sensor_id: m.sensor_id,
+            timestamp: m.timestamp.utc().format(),
+            measure: m.measure,
+        }));
+    }
+
     csv() {
         const csvStringifier = createCsvStringifier({
             header: this.headers.map((head) => ({

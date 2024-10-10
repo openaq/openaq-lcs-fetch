@@ -4,7 +4,6 @@ require('dotenv').config({ path });
 const providers = new (require('./lib/providers'))();
 const sources = require('./sources');
 
-
 if (require.main === module) {
     handler();
 }

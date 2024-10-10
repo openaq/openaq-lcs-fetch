@@ -35,14 +35,15 @@ class Providers {
      * @param {Object} source
      */
     async processor(source) {
-        if (VERBOSE) console.debug('Processing', source.provider);
-        if (!this[source.provider]) throw new Error(`${source.provider} is not a supported provider`);
+        if (VERBOSE) console.debug(`Processing ${source.provider} with ${source.processor} processor`);
+        const p = this[source.processor];
+        if (!p) throw new Error(`${source.processor} is not a supported processor`);
         // fetch any secrets we may be storing for the provider
         if (VERBOSE) console.debug('Fetching secret: ', source.secretKey);
         const config = await fetchSecret(source);
         // and combine them with the source config for more generic access
         if (VERBOSE) console.log('Starting processor', { ...source, ...config });
-        const log = await this[source.provider].processor({ ...source, ...config });
+        const log = await p.processor({ ...source, ...config });
         // source_name is more consistent with our db schema
         if (typeof(log) == 'object' && !Array.isArray(log) && !log.source_name) {
             log.source_name = source.provider;
