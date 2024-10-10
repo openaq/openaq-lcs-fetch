@@ -1,5 +1,5 @@
 const Providers = require('../lib/providers');
-const { fetchFile } = require('../lib/utils');
+const { fetchFile, DRYRUN  } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 const dayjs = require('dayjs');
@@ -189,6 +189,41 @@ class System {
 
 }
 
+/**
+ * Flag object
+ */
+// flag levels info, warning, error
+class Flag {
+    constructor(data) {
+        this.flag_id = data.flag_id || Flag.id(data);
+        this.datetime_from = data.starts;
+        this.datetime_to = data.ends;
+        this.flag_name = data.flag;
+        this.note = data.note;
+        classAssign(this, data, []);
+    }
+
+    static id(data) {
+        // very basic method here
+        const starts = data.starts || 'infinity';
+        return `${data.sensor_id}-${data.flag}::${starts}`;
+    }
+
+    /**
+     * Export method to convert to json
+     * @returns {object} - object
+     */
+    json() {
+        return stripNulls({
+            flag_id: this.flag_id,
+            datetime_from: this.datetime_from,
+            datetime_to: this.datetime_to,
+            flag_name: this.flag_name,
+            note: this.note,
+        });
+    }
+}
+
 
 /**
  * Sensor object
@@ -201,8 +236,15 @@ class Sensor {
         this.version_date = null;
         this.instance = null;
         this.status = null;
-        this.metadata = null;
+        this.flags = {};
         classAssign(this, data, []);
+    }
+
+    add(f) {
+        f.sensor_id = this.sensor_id;
+        const flag = new Flag(f);
+        this.flags[flag.flag_id] = flag;
+        return flag;
     }
 
     /**
@@ -217,9 +259,12 @@ class Sensor {
             instance: this.instance,
             parameter: this.parameter,
             interval_seconds: this.interval_seconds,
+            flags: Object.values(this.flags).map((s) => s.json()),
         });
     }
 }
+
+
 
 
 
@@ -251,6 +296,7 @@ class Client {
         this.measurands = null;
         this.measures = new Measures(FixedMeasure);
         this.locations = {};
+        this.sensors = {};
         this.log = {}; // track errors and warnings to provide later
     }
 
@@ -345,6 +391,29 @@ class Client {
         }
 
         return loc;
+    }
+
+
+    /**
+     * Get sensor by key
+     *
+     * @param {(string|object)} key - key or data to build sensor
+     * @returns {object} - sensor object
+     */
+    getSensor(key) {
+        let sensor = null;
+        let data = {};
+        if (typeof(key) === 'object') {
+            data = { ...key };
+            key = this.getSensorId(data);
+        }
+
+        sensor = this.sensors[key];
+        if (!sensor) {
+            //sensor = this.addSensor({ sensor_id: key, ...data });
+        }
+
+        return sensor;
     }
 
     /**
@@ -467,7 +536,8 @@ class Client {
 
                 const system_id = this.getSystemId(d);
                 const location = this.getLocation(d);
-                location.add({ sensor_id, system_id, ...d });
+                // maintain a way to get the sensor back without traversing everything
+                this.sensors[sensor_id] = location.add({ sensor_id, system_id, ...d });
 
             } catch (e) {
                 this.logMessage(`Error adding sensor: ${e.message}`, 'error');
@@ -535,8 +605,17 @@ class Client {
         console.debug(`Processing ${flags.length} flags`);
         flags.map((d) => {
             try {
-                // coming soon
-                console.log(d);
+
+                const sensor = this.getSensor({
+                    location: d[this.location_key],
+                    metric: d[this.parameter_key],
+                    ...d,
+                });
+
+                if(sensor) {
+                    sensor.add(d);
+                }
+
             } catch (e) {
                 console.warn(`Error adding flag: ${e.message}`);
             }
@@ -574,10 +653,12 @@ class Client {
             locations: Object.values(this.locations).length,
             systems: Object.values(this.locations).map((l) => Object.values(l.systems).length).flat().reduce((d,i) => d + i),
             sensors: Object.values(this.locations).map((l) => Object.values(l.systems).map((s) => Object.values(s.sensors).length)).flat().reduce((d,i) => d + i),
+            // taking advantage of the sensor object list
+            flags: Object.values(this.sensors).map((s) => Object.values(s.flags).length).flat().reduce((d,i) => d + i),
             measures: this.measures.length,
             errors: error_summary,
-            from: this.measures.from.utc().format(),
-            to: this.measures.to.utc().format(),
+            from: this.measures.from && this.measures.from.utc().format(),
+            to: this.measures.to && this.measures.to.utc().format(),
         };
     }
 }
@@ -605,7 +686,8 @@ module.exports = {
         // await client.fetchData();
         // and then push it to the
         // console.dir(client.data(), { depth: null });
-        Providers.put_measures_json(client.provider, client.data());
+        const file_name = DRYRUN ? 'test_data' : null;
+        Providers.put_measures_json(client.provider, client.data(), file_name);
         return client.summary();
     },
     Client,
