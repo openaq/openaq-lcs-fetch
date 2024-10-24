@@ -1,7 +1,7 @@
 {
     "schema": "v1",
     "provider": "airqoon",
-    "frequency": "hour",
+    "frequency": "minute",
     "secretKey": "airqoon-credentials",
     "active": true,
     "meta": {
