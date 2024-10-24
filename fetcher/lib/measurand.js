@@ -21,7 +21,8 @@ class Measurand {
             {
                 ppb: ['ppm', (val) => val / 1000],
                 'ng/m³': ['µg/m³', (val) => val / 1000],
-                pp100ml: ['particles/cm³', (val) => val / 100]
+                pp100ml: ['particles/cm³', (val) => val / 100],
+                'pa': ['hPa', (val) => val / 100]
             }[this.unit] || [this.unit, (val) => val]
         );
     }

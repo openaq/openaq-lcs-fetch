@@ -174,8 +174,6 @@ class Providers {
         const filename = id || `${Math.floor(Date.now() / 1000)}-${Math.random().toString(36).substring(8)}`;
         const Key = `${process.env.STACK}/measures/${provider}/${today}/${filename}.json.gz`;
         const compressedString = await gzip(JSON.stringify(data));
-
-
         if (DRYRUN) {
             console.log(`Would have saved ${data.measures.length} measurements and ${data.locations.length} stations to '${Bucket}/${Key}'`);
             putFile(compressedString, Key);
