@@ -8,13 +8,9 @@
       "value_key": "value"
   },
   "frequency": "upload",
+  "files": [],
   "parameters": {
     "as": ["as","ppb"],
-    "bc_375": ["bc_375","ng/m3"],
-    "bc_470": ["bc_470","ng/m3"],
-    "bc_528": ["bc_528","ng/m3"],
-    "bc_625": ["bc_625","ng/m3"],
-    "bc_880": ["bc_880","ng/m3"],
     "cd": ["cd","ppb"],
     "cl": ["cl","ppb"],
     "co": ["co", "ppb"],
@@ -29,7 +25,7 @@
     "p": ["pressure", "hpa"],
     "pb": ["pb","ppb"],
     "pm10": ["pm10", "ppb"],
-    "pm025": ["pm25", "ppb"],
+    "pm025": ["pm25", "ug/m3"],
     "rh": ["relativehumidity", "%"],
     "so2": ["so2", "ppb"],
     "so4": ["so4","ppb"],
