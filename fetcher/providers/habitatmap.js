@@ -132,7 +132,8 @@ async function fixed_locations(source) {
         usernames: '',
         sensor_name: 'airbeam2-pm2.5',
         measurement_type: 'Particulate Matter',
-        unit_symbol: 'µg/m³'
+        unit_symbol: 'µg/m³',
+        is_indoor: false,
     };
 
     const url = new URL('/api/fixed/active/sessions.json', source.meta.url);
