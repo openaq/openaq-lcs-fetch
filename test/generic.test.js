@@ -32,11 +32,11 @@ tape('wide measurements work', async (t) => {
     }));
 
     const data = client.data();
-
     t.equal(data.meta.source, 'testing', 'has correct source name');
     t.equal(data.locations.length, 0, 'no locations were added');
     t.equal(data.measures.length, 2, 'two measurements were added');
     t.equal(data.measures[0].sensor_id, 'testing-test_site_1-co', 'has correct ingest id');
+    t.match(data.measures[0].timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/, 'has correct timestamp');
 
     t.end();
 });
@@ -59,6 +59,7 @@ tape('long measurements work', async (t) => {
     }));
 
     const data = client.data();
+    //console.dir(data, {depth:null})
 
     t.equal(data.meta.source, 'testing', 'has correct source name');
     t.equal(data.locations.length, 0, 'no locations were added');
