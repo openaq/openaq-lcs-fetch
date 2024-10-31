@@ -1,5 +1,5 @@
 const Providers = require('../lib/providers');
-const { fetchFile, DRYRUN  } = require('../lib/utils');
+const { fetchFile, DRYRUN, VERBOSE  } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 const dayjs = require('dayjs');
@@ -287,7 +287,7 @@ class Client {
         this.manufacturer_key = source.meta.manufacturer_key || 'manufacturer_name';
         this.model_key = source.meta.model_key || 'model_name';
         this.datetime_key = source.meta.timestamp_key || 'datetime';
-        this.datetime_format = 'YYYY-MM-DD HH-mm-ss';
+        this.datetime_format =source.meta.datetime_format || 'YYYY-MM-DD HH-mm-ss';
         this.timezone = source.meta.timezone || 'UTC';
         this.datasources = {};
         this.missing_datasources = [];
@@ -434,7 +434,15 @@ class Client {
      * @returns {string} - formated timestamp string
      */
     getDatetime (row) {
-        return dayjs.utc(row[this.datetime_key], this.datetime_format);
+        const dt_string = row[this.datetime_key];
+        if(!dt_string) {
+            throw new Error(`Missing date/time field. Looking in ${this.datetime_key}`);
+        }
+        const dt = dayjs.utc(dt_string, this.datetime_format);
+        if(!dt.isValid()) {
+            throw new Error(`A valid date could not be made from ${dt_string} using ${this.datetime_format}`);
+        }
+        return dt;
     }
 
     /**
@@ -458,6 +466,7 @@ class Client {
         // if strict than throw error, otherwise just log for later
         if(!this.log[type]) this.log[type] = [];
         this.log[type].push({ message, err});
+        if (VERBOSE) console.log(`${type}:`, err && err.message);
     }
 
     /**

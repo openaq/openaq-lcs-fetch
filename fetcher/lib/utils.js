@@ -208,7 +208,7 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
 }
 
 const fetchFileLocal = async (file) => {
-    const filepath = file.path;
+    const filepath = file.path.replace('$CWD', process.cwd());
     const data = [];
     console.debug('fetching file', filepath);
     return new Promise((resolve, reject) => {
