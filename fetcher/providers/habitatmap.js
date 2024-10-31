@@ -24,6 +24,8 @@ async function process_fixed_locations(source, measurands) {
     const measures = new Measures(FixedMeasure);
 
     const locations = await fixed_locations(source);
+    console.log(locations)
+
     if (!locations.length) {
         console.warn('No fixed locations returned, exiting.');
         return { source_name: 'habitatmap:fixed', locations: 0, measures: 0 };
@@ -145,7 +147,7 @@ async function fixed_locations(source) {
         url: url
     });
 
-    return res.body.sessions;
+    return res.body.sessions.filter(d=>d.latitude!=200);
 }
 
 async function mobile_measures(source, station_id) {
