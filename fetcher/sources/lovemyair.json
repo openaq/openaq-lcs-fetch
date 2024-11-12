@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "lovemyair",
+    "frequency": "hour",
+    "secretKey": "lovemyair",
+    "active": true,
+    "meta": {
+        "url": "https://denver.lovemyair.com/Data/GetPartnerInfo"
+    }
+}
