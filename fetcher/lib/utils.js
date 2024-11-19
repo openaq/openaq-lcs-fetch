@@ -4,12 +4,14 @@ const request = promisify(require('request'));
 const fs = require('node:fs');
 const path = require('path');
 const homedir = require('os').homedir();
+const csv = require('csv-parser');
 
 const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const VERBOSE = !!process.env.VERBOSE;
 const DRYRUN = !!process.env.DRYRUN;
+
 
 const s3 = new S3Client({
     maxRetries: 10
@@ -185,11 +187,11 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     const fdata = data.filter((d) => {
         return (
             (d.time / 1000 >= start_timestamp || !start_timestamp) &&
-      d.time / 1000 <= end_timestamp
+                d.time / 1000 <= end_timestamp
         );
     });
     if (fdata.length < n) {
-    // submit warning so we can track this
+        // submit warning so we can track this
         const requested_start = new Date(
             start_timestamp * 1000
         ).toISOString();
@@ -205,9 +207,39 @@ function checkResponseData(data, start_timestamp, end_timestamp) {
     return fdata;
 }
 
+const fetchFileLocal = async (file) => {
+    const filepath = file.path.replace('$CWD', process.cwd());
+    const data = [];
+    console.debug('fetching file', filepath);
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(filepath)
+            .on('error', (e) => {
+                reject(e);
+            })
+            .pipe(csv())
+            .on('data', (row) => {
+                data.push(row);
+            })
+            .on('end', () => {
+                resolve(data);
+            });
+    });
+};
+
+const fetchFile = async (file) => {
+    const source = file.source;
+    let data;
+    if (['local','undefined',undefined,null].includes(source)) {
+        data = await fetchFileLocal(file);
+    } else {
+        throw new Error(`No support for ${source}`);
+    }
+    return data;
+};
 
 module.exports = {
     fetchSecret,
+    fetchFile,
     request,
     toCamelCase,
     gzip,

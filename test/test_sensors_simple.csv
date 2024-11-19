@@ -1,0 +1,5 @@
+location,parameter,units,manufacturer_name,model_name,interval_seconds,status
+Test Site #1,ws,m/s,MetOne,AIO2,3600,u
+Test Site #1,co,ppb,Ecotech,Serinus 30,3600,u
+Test Site #2,ws,m/s,MetOne,AIO2,3600,u
+Test Site #2,wd,deg,MetOne,AIO2,3600,u

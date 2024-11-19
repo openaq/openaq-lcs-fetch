@@ -1,0 +1,37 @@
+{
+  "schema": "v1",
+  "provider": "cac",
+  "processor": "generic",
+  "active": true,
+  "meta": {
+      "parameter_key": "parameter",
+      "value_key": "value"
+  },
+  "frequency": "upload",
+  "files": [],
+  "parameters": {
+    "as": ["as","ppb"],
+    "cd": ["cd","ppb"],
+    "cl": ["cl","ppb"],
+    "co": ["co", "ppb"],
+    "ec": ["ec","ppb"],
+    "fe": ["fe","ppb"],
+    "k": ["k","ppb"],
+    "ni": ["ni","ppb"],
+    "no2": ["no2", "ppb"],
+    "no3": ["no3","ppb"],
+    "o3": ["o3", "ppb"],
+    "oc": ["oc","ppb"],
+    "p": ["pressure", "hpa"],
+    "pb": ["pb","ppb"],
+    "pm10": ["pm10", "ppb"],
+    "pm025": ["pm25", "ug/m3"],
+    "rh": ["relativehumidity", "%"],
+    "so2": ["so2", "ppb"],
+    "so4": ["so4","ppb"],
+    "temp": ["temperature", "c"],
+    "v": ["v","ppb"],
+    "wd": ["wind_direction", "deg"],
+    "ws": ["wind_speed", "m/s"]
+  }
+}
