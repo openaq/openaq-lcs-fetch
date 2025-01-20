@@ -1,0 +1,9 @@
+{
+    "schema": "v1",
+    "provider": "cpcb",
+    "frequency": "hour",
+    "secretKey": "cpcb-secret",
+    "active": true,
+    "meta": {
+    }
+}
