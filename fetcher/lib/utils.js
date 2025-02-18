@@ -74,8 +74,9 @@ async function putObject(text, Bucket, Key, gzip = true, ContentType = 'applicat
  */
 async function putFile(text, key) {
     const fpath = path.join(homedir, `Downloads/${key}`);
-    await fs.mkdirSync(path.dirname(fpath), { recursive: true });
-    await fs.writeFileSync(fpath, text);
+    console.log("saving to:",fpath)
+    fs.mkdirSync(path.dirname(fpath), { recursive: true });
+    fs.writeFileSync(fpath, text);
 }
 
 
@@ -101,6 +102,8 @@ async function fetchSecret(source) {
     const SecretId = `${
         process.env.SECRET_STACK || process.env.STACK
     }/${key}`;
+    console.log("SecretId", SecretId)
+
 
     if (VERBOSE) console.debug(`Fetching ${SecretId} secret...`);
 
