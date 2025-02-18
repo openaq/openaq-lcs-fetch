@@ -1,4 +1,4 @@
-const  { Storage } =  require('@google-cloud/storage');
+const  { Storage } = require('@google-cloud/storage');
 
 const Providers = require('../lib/providers');
 
@@ -245,7 +245,7 @@ class CPCBBucket {
 module.exports = {
     async processor(source) {
 
-        // create new smartsense object
+        // create new cpcb object
         const client = new CPCBBucket(source);
         // fetch and process the data
         await client.fetchData();
