@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "iqair",
+    "frequency": "hour",
+    "secretKey": "iqair-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://iqair.com"
+    }
+}
