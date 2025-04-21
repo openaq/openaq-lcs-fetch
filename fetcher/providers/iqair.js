@@ -120,7 +120,7 @@ class IqAir {
     }
 
 
-    async fetchMeasurements(stationId, year, month, day) {
+    async fetchMeasurements(stationId, year, month, day, offset) {
         const dataUrl =  this.source.dataUrl;
         const measurementsUrl = new URL(`${stationId}/${stationId}-${year}-${month}-${day}.csv`,dataUrl);
         const res = await request({
@@ -129,7 +129,7 @@ class IqAir {
             method: 'GET'
         });
         const data = parse(res.body, { delimiter: ',', columns: true ,relax_column_count: true });
-        const firstRecords = data.slice(0,6);
+        const firstRecords = data.slice(0,12); // values are often delayed so overfetch to fill in gaps
         return firstRecords.filter(o => o['Datetime_start(UTC)'] !== '').map((o) => {
             const datetime = dayjs.tz(o['Datetime_start(UTC)'], 'UTC').add(1, 'hours').toISOString();
             return { value: o['pm25(ug/m3)'], datetime: datetime };
@@ -163,7 +163,7 @@ class IqAir {
             const dayPadded = String(day).padStart(2, '0');
             const monthPadded = String(month).padStart(2, '0');
             const hour = now.getUTCHours();
-            if (hour < 3) { // if it early in the day also fetch the previous days data to fill gaps and deal with end of hour reporting
+            if (hour < 12) { // if it early in the day also fetch the previous days data to fill gaps and deal with end of hour reporting
                 console.info('Early in day, fetching previous days measurements');
                 let previousDayPadded;
                 let previousDayMonthPadded;
@@ -177,7 +177,9 @@ class IqAir {
                 }
                 const previousDayMeasurements = await this.fetchMeasurements(id, year, previousDayMonthPadded, previousDayPadded);
                 try {
-                    previousDayMeasurements.filter((o) => o.value !== '').map((m) => {
+                    const validMeasurements = previousDayMeasurements.filter((o) => o.value !== '');
+                    console.info(`Adding ${validMeasurements.lenght} from previous day.`);
+                    validMeasurements.map((m) => {
                         this.measures.push({
                             sensor_id: this.getSensorId(id),
                             measure: Number(m.value),
