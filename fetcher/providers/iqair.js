@@ -14,8 +14,14 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 
+
 const stationsMap = [
     // Permian Health
+    { stationId: '4b9e76da8055d913d29dd9c9ef2020b7', name: 'Permian Health-Brusubi'},
+    { stationId: '72d5a4ffeb19c195ed6bfaf53f110a0b', name: 'Sir Dawda Kairaba Jawara International Conference Center'},
+    { stationId: '1ee31b52e19ad85d4ef87e250cd4ced7', name: 'Kartong Bird Observatory'},
+    { stationId: 'a950b89f0f8b07f5a0c03103ca9801e2', name: 'Karamies Health'},
+    { stationId: 'd0f8d27b2ef0a75885246b58d3a80393', name: 'Gunjur Batoh Sateh'},
     { stationId: '32934920d734e564c0f09423a2c8dcbf', name: 'Permian Health- Bertil Harding Hwy' },
     { stationId: '073cce180ca0760978ed594cd06b9f4d', name: 'Permian Health- Jaliba Junction' },
     { stationId: '8405a2f8fa5a0b7fbb110b57964cf56f', name: 'Bakoteh Landfill' },

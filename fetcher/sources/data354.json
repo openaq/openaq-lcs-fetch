@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "data354",
+    "frequency": "hour",
+    "secretKey": "data354-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://data354.com"
+    }
+}
