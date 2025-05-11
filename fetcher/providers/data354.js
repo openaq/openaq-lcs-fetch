@@ -5,7 +5,11 @@ const { Measurand } = require('../lib/measurand');
 
 const dayjs = require('dayjs');
 const customParseFormat = require('dayjs/plugin/customParseFormat');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 
 class Data354Api {
@@ -75,7 +79,7 @@ class Data354Api {
     }
 
     getSensorId(stationId, parameter) {
-        const measurand = this.measurands[parameter];
+        const measurand = this.measurands[parameter].parameter;
         return `data354-${stationId}-${measurand}`;
     }
 
@@ -93,24 +97,28 @@ class Data354Api {
             json: true,
             method: 'GET'
         });
-        const measurements = data.body.map((o) => {
-            const timestamp = dayjs(o.timestamp, ['YYYY-MM-DD HH:mm:ss']);
-            // convert to hour ending to match our system
-            timestamp.set(timestamp.get('hour') + 1);
-            const m = params.map((key) => ({
-                timestamp: timestamp.toISOString(),
-                parameter: key,
-                value: o[key]
-            }));
-            return (m);
-        }).flat();
-        return measurements;
+        if (data.body.length > 1) {
+            const measurements = data.body.map((o) => {
+                let timestamp = dayjs.tz(o.timestamp, 'UTC');
+                // convert to hour ending to match our system
+                timestamp = timestamp.add(1, 'hour');
+                const m = params.map((key) => ({
+                    timestamp: timestamp.toISOString(),
+                    parameter: key,
+                    value: o[key]
+                }));
+                return (m);
+            }).flat();
+            return measurements;
+        } else {
+            return [];
+        }
+
     }
 
     async fetchData() {
         await this.fetchMeasurands();
         const stations = await this.fetchStations();
-        console.log(stations)
         stations.map((o) => {
             try {
                 this.locations.push({
