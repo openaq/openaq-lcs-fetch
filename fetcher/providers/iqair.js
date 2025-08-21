@@ -15,27 +15,6 @@ dayjs.extend(timezone);
 dayjs.extend(customParseFormat);
 
 
-const stationsMap = [
-    // Permian Health
-    { stationId: '4b9e76da8055d913d29dd9c9ef2020b7', name: 'Permian Health-Brusubi'},
-    { stationId: '72d5a4ffeb19c195ed6bfaf53f110a0b', name: 'Sir Dawda Kairaba Jawara International Conference Center'},
-    { stationId: '1ee31b52e19ad85d4ef87e250cd4ced7', name: 'Kartong Bird Observatory'},
-    { stationId: 'a950b89f0f8b07f5a0c03103ca9801e2', name: 'Karamies Health'},
-    { stationId: 'd0f8d27b2ef0a75885246b58d3a80393', name: 'Gunjur Batoh Sateh'},
-    { stationId: '32934920d734e564c0f09423a2c8dcbf', name: 'Permian Health- Bertil Harding Hwy' },
-    { stationId: '073cce180ca0760978ed594cd06b9f4d', name: 'Permian Health- Jaliba Junction' },
-    { stationId: '8405a2f8fa5a0b7fbb110b57964cf56f', name: 'Bakoteh Landfill' },
-    { stationId: '14cc270eefe11f45cc11b9b6972f7b4e', name: 'Westfield Youth Monument' },
-    { stationId: '41578413e02e9102edea151794abc022', name: 'McCarthy Square, Banjul' },
-    { stationId: '85a514d203254b6166f501a19f9d30c8', name: 'Permian Health/NEA Soma, Lower River Region' },
-    { stationId: '1d27d3fb1eea0ab56a1c85f91842cc2a', name: 'Farafenni, North Bank Region' },
-    { stationId: '1e0859732acd432d6067e167611c6976', name: 'Brikama Ba, Central River Region' },
-    { stationId: '0bcefeae54316e0950351a2ff5f12ccf', name: 'TAF City, The Gambia' },
-    { stationId: 'bae2c376de96c1e06a68272b64ef85ef', name: 'Dalaba Estate- TAF Africa Global' },
-    { stationId: 'a8a44d7c43fead7dc29c6be59bf2cd1a', name: 'Brufut Madiba Mall' },
-    { stationId: 'f9e073058ac997d8ac8414ede8cb583a', name: 'Fajikunda Health Center' },
-    { stationId: 'd6075ca4598ca33b8de4b2b679e709c8', name: 'Serekunda Health Center' }
-]
 
 
 function camelize(str) {
@@ -84,11 +63,31 @@ class IqAir {
     }
 
 
+    async fetchStationsList() {
+        const url = new URL('sponsor/bdbce91d00bdf7560cecd5c45f0e466b.csv',this.source.dataUrl);
+        const res = await request({
+            url: url,
+            json: false,
+            method:'GET'
+        });
+        const data = parse(res.body, { delimiter: ',', columns: true ,relax_column_count: true });
+        const stations = data.map((o) => {
+            const url = new URL(o['Open data link']);
+            const pathname = url.pathname;
+            const id = pathname.split('/')[2];
+            return {  stationId: id, name: o['Station name'] };
+        })
+        return stations;
+
+    }
+
+
     /**
      * Fetch the list of stations and convert to object for reference later
      * @returns {array} a list of datasources
      */
     async fetchStations() {
+        const stationsMap = await this.fetchStationsList();
         const stations = [];
         const dataUrl =  this.source.dataUrl;
         for (const { stationId } of stationsMap) {
