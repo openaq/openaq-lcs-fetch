@@ -133,6 +133,9 @@ class IqAir {
             json: false,
             method: 'GET'
         });
+        if (res.statusCode !== 200) {
+            throw new Error(`HTTP ${res.statusCode}`);
+        }
         const data = parse(res.body, { delimiter: ',', columns: true ,relax_column_count: true });
         const firstRecords = data.slice(0,12); // values are often delayed so overfetch to fill in gaps
         return firstRecords.filter(o => o['Datetime_start(UTC)'] !== '').map((o) => {
@@ -183,7 +186,7 @@ class IqAir {
                 const previousDayMeasurements = await this.fetchMeasurements(id, year, previousDayMonthPadded, previousDayPadded);
                 try {
                     const validMeasurements = previousDayMeasurements.filter((o) => o.value !== '');
-                    console.info(`Adding ${validMeasurements.lenght} from previous day.`);
+                    console.info(`Adding ${validMeasurements.length} from previous day.`);
                     validMeasurements.map((m) => {
                         this.measures.push({
                             sensor_id: this.getSensorId(id),
@@ -196,18 +199,23 @@ class IqAir {
                     console.error(`Error adding measurement: ${e.message}`);
                 }
             }
-            const measurements = await this.fetchMeasurements(id, year, monthPadded, dayPadded);
             try {
-                measurements.filter((o) => o.value !== '').map((m) => {
-                    this.measures.push({
-                        sensor_id: this.getSensorId(id),
-                        measure: Number(m.value),
-                        timestamp: m.datetime,
-                        flags: { }
+                const measurements = await this.fetchMeasurements(id, year, monthPadded, dayPadded);
+                try {
+                    measurements.filter((o) => o.value !== '').map((m) => {
+                        this.measures.push({
+                            sensor_id: this.getSensorId(id),
+                            measure: Number(m.value),
+                            timestamp: m.datetime,
+                            flags: { }
+                        });
                     });
-                });
-            } catch (e) {
-                console.error(`Error adding measurement: ${e.message}`);
+                } catch (e) {
+                    console.error(`Error adding measurement: ${e.message}`);
+                }
+            }
+            catch (e) {
+                console.error(`failed to fetch: ${e}`);
             }
         }
 
