@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "airqo",
+    "frequency": "hour",
+    "secretKey": "airqo-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://api.airqo.net"
+    }
+}
