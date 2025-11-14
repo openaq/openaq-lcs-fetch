@@ -67,6 +67,9 @@ class Data354Api {
             json: true,
             method: 'GET'
         });
+        if (stations.statusCode !== 200) {
+            return [];
+        }
         return stations.body.filter((o) => o.deployment_flag === 1 && o.deployment_date !== '').map((o) => {
             const { station_id,station_name, latitude, longitude } = o;
             return {
