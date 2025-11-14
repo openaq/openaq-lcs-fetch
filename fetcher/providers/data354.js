@@ -97,6 +97,9 @@ class Data354Api {
             json: true,
             method: 'GET'
         });
+        if (data.statusCode !== 200) {
+            return [];
+        }
         if (data.body.length > 1) {
             const measurements = data.body.map((o) => {
                 let timestamp = dayjs.tz(o.timestamp, 'UTC');
