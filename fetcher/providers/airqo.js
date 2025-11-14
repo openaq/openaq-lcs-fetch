@@ -56,12 +56,12 @@ class AirQoAPI {
         url.pathname += `/${this.source.cohortId}`;
         url.searchParams.set('token', this.source.secretToken);
         const response = await request({
-            url,
+            url: url.href,
             json: true,
             method: 'GET',
             gzip: true
         });
-        console.debug(`Found ${Object.keys(response.body.measurements).length} measurements`);
+        console.debug(`AIRQO Found ${Object.keys(response.body?.measurements || []).length} measurements`);
         return response.body.measurements;
     }
 
