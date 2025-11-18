@@ -58,7 +58,7 @@ class HawanamaApi {
             gzip: true
         });
         console.debug(`Found ${Object.keys(response.body.results).length} locations`);
-        return this.locations;
+        return response.body.results;
     }
 
 
@@ -105,7 +105,7 @@ class HawanamaApi {
 
 
         console.debug(`Found ${measurements.length} measurements for ${locations.length} locations`);
-
+        
         locations.map((d) => {
             try {
                 this.locations.push({
@@ -119,6 +119,7 @@ class HawanamaApi {
                 console.warn(`Error adding location: ${e.message}`);
             }
         });
+        console.log(this.locations)
 
         measurements.map( (m) => {
             try {
