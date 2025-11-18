@@ -1,0 +1,7 @@
+{
+    "schema": "v1",
+    "provider": "hawanama",
+    "frequency": "hour",
+    "secretKey": "hawanama-secrets",
+    "active": true
+}
