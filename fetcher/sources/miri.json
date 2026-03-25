@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "miri",
+    "frequency": "hour",
+    "secretKey": "miri-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://opendata.miri.africa"
+    }
+}
