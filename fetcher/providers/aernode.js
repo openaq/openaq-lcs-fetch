@@ -22,7 +22,7 @@ class AernodeAPI {
             PM10: ['pm10', 'ug/m3'],
             'RH': ['relativehumidity', '%'],
             'T-ext': ['temperature', 'c'],
-            hPa: ['pressure', 'pa'] // reported in hPa to convert tp pa
+            hPa: ['pressure', 'hpa'] // reported in hPa to convert tp pa
         };
         // holder for the locations
         this.measures = new Measures(FixedMeasure);
