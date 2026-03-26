@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "aernode",
+    "frequency": "hour",
+    "secretKey": "aernode-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://api.aernode.io"
+    }
+}
