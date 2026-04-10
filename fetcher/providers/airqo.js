@@ -46,23 +46,32 @@ class AirQoAPI {
         }
     }
 
+    get cohorts() {
+        return this.source.cohorts;
+    }
+
 
     /**
      * Fetch the list of datasources and convert to object for reference later
      * @returns {array} a list of datasources
      */
     async fetchMeasurements() {
-        const url = new URL('api/v2/devices/measurements/cohorts', this.baseUrl);
-        url.pathname += `/${this.source.cohortId}`;
-        url.searchParams.set('token', this.source.secretToken);
-        const response = await request({
-            url: url.href,
-            json: true,
-            method: 'GET',
-            gzip: true
-        });
-        console.debug(`AIRQO Found ${Object.keys(response.body?.measurements || []).length} measurements`);
-        return response.body.measurements;
+        let measurements = [];
+        for (const cohort of this.cohorts) {
+            const url = new URL('api/v2/devices/measurements/cohorts', this.baseUrl);
+            url.pathname += `/${cohort}`;
+            url.searchParams.set('token', this.source.secretToken);
+            const response = await request({
+                url: url.href,
+                json: true,
+                method: 'GET',
+                gzip: true
+            });
+            measurements = measurements.concat(response.body.measurements);
+        }
+
+        console.debug(`AIRQO Found ${Object.keys(measurements || []).length} measurements`);
+        return measurements;
     }
 
     /**
@@ -95,6 +104,7 @@ class AirQoAPI {
         const measurements = await this.fetchMeasurements();
 
         for (const location of measurements) {
+            console.log("LOCATION",location)
             this.locations.push({
                 location: this.getLocationId(location),
                 label: location.device,

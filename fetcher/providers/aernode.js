@@ -24,7 +24,7 @@ class AernodeAPI {
             'T-ext': ['temperature', 'c'],
             hPa: ['pressure', 'hpa'], // reported in hPa to convert tp pa
             NO2_ug: ['no2', 'ug/m3'],
-            O3_ug: ['O3_ug', 'ug/m3']
+            O3_ug: ['o3', 'ug/m3']
         };
         // holder for the locations
         this.measures = new Measures(FixedMeasure);
