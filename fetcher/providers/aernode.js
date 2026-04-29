@@ -115,11 +115,12 @@ class AernodeAPI {
             const parametersCount = new Set(measurements.map((o) => o.metric_name)).size;
             const recentMeasurements = measurements.length > parametersCount * 3 ? measurements.slice(-(parametersCount * 3)) : measurements;
             console.log(` recentMeasurements is ${recentMeasurements.length}`);
-            recentMeasurements.filter((o) => Object.keys(this.parameters).includes(o.metric_name)).map((m) => {
+            recentMeasurements.slice(0, -parametersCount).filter((o) => Object.keys(this.parameters).includes(o.metric_name)).map((m) => {
+                const hourEndingTime = new Date(new Date(m.time).getTime() + 60 * 60 * 1000).toISOString();
                 this.measures.push({
                     sensor_id: this.getSensorId(device.device_id,  m.metric_name),
                     measure: this.normalize({ metric: m.metric_name, value: m.value }),
-                    timestamp: m.time,
+                    timestamp: hourEndingTime,
                     flags: { }
                 });
             });
