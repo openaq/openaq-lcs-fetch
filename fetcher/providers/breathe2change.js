@@ -188,7 +188,7 @@ class Breathe2ChangeApi {
                     }
 
                     this.measures.push({
-                        sensor_id: this.getSensorId(reading.id, identifier),
+                        sensor_id: this.getSensorId(device.id, identifier),
                         measure: this.normalize({ metric: identifier, value: measurement.value }),
                         timestamp: new Date(measurement.timestamp * 1000).toISOString(),
                         flags: {}
