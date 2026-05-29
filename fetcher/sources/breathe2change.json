@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "breathe2change",
+    "frequency": "hour",
+    "secretKey": "breathe2change-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://api.neuerweg.tech"
+    }
+}
