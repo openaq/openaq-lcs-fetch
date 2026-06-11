@@ -1,0 +1,10 @@
+{
+    "schema": "v1",
+    "provider": "aurassure",
+    "frequency": "hour",
+    "secretKey": "aurassure-secrets",
+    "active": true,
+    "meta": {
+        "url": "https://app.aurassure.com"
+    }
+}
