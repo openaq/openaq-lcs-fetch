@@ -4,6 +4,6 @@
     "frequency": "minute",
     "active": true,
     "meta": {
-        "url": "http://aircasting.habitatmap.org"
+        "url": "https://aircasting.org"
     }
 }
