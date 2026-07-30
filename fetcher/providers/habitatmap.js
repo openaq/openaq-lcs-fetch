@@ -1,193 +1,56 @@
-
-
 const Providers = require('../lib/providers');
-const { Sensor, SensorNode, SensorSystem } = require('../lib/station');
-const { Measures, FixedMeasure, MobileMeasure } = require('../lib/measure');
-const { Measurand } = require('../lib/measurand');
 const { request, checkResponseData } = require('../lib/utils');
+const { Measures, FixedMeasure } = require('../lib/measure');
+const { Measurand } = require('../lib/measurand');
 
-const lookup = {
-    // input_param: [measurand_parameter, measurand_unit]
-    'AirBeam2-PM2.5': ['pm25', 'µg/m³']
-};
+class HabitatMapApi {
+    /**
+     *
+     * @param {Source} source
+     */
+    constructor(source) {
+        this.fetched = false;
+        this.source = source;
+        this.measurands = null;
+        this.parameters = {
+            'AirBeam3-PM2.5': ['pm25', 'µg/m³']
+        };
+        this.windowSeconds = 60 * 60 * 2;
 
-
-async function processor(source) {
-    const measurands = await Measurand.getSupportedMeasurands(lookup);
-    const fixed = await process_fixed_locations(source, measurands);
-    const mobile = await process_mobile_locations(source, measurands);
-    return [fixed, mobile];
-}
-
-async function process_fixed_locations(source, measurands) {
-    const stations = [];
-    const measures = new Measures(FixedMeasure);
-
-    const locations = await fixed_locations(source);
-    if (!locations.length) {
-        console.warn('No fixed locations returned, exiting.');
-        return { source_name: 'habitatmap:fixed', locations: 0, measures: 0 };
-    }
-    console.log(`ok - pulled ${locations.length} fixed stations`);
-
-    for (const location of locations) {
-        const system = new SensorSystem();
-        const sta = new SensorNode({
-            sensor_node_id: location.id,
-            sensor_node_site_name: location.title,
-            sensor_node_geometry: [location.longitude, location.latitude],
-            sensor_node_source_name: 'HabitatMap',
-            sensor_node_ismobile: false,
-            sensor_system: system
-        });
-
-        for (const measurand of measurands) {
-            if (!location.streams[measurand.input_param]) continue;
-
-            const sensor_id = `${sta.sensor_node_source_name}-${location.streams[measurand.input_param].id}-${measurand.parameter}`;
-
-            const sensor = new Sensor({
-                sensor_id,
-                measurand_parameter: measurand.parameter,
-                measurand_unit: measurand.normalized_unit
-            });
-            system.sensors.push(sensor);
-
-            const measure = location.streams[measurand.input_param].average_value;
-            if (measure) continue;
-            measures.push({
-                sensor_id,
-                measure: measurand.normalize_value(measure),
-                timestamp: location.end_time_local
-            });
-        }
-
-        stations.push(Providers.put_station(source.provider, sta));
+        this.locations = [];
+        this.measures = new Measures(FixedMeasure);
     }
 
-    await Promise.all(stations);
-    await Providers.put_measures(source.provider, measures);
-    return { source_name: 'habitatmap:fixed', locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
-}
-
-async function process_mobile_locations(source, measurands) {
-    const stations = [];
-    const measures = new Measures(MobileMeasure);
-
-    const locations = await mobile_locations(source);
-    if (!locations.length) {
-        console.warn('No mobile locations returned, exiting.');
-        return { source_name: 'habitatmap:mobile', locations: 0, measures: 0 };
-    }
-    console.log(`ok - pulled ${locations.length} mobile stations`);
-
-    for (const location of locations) {
-        const system = new SensorSystem();
-        const sta = new SensorNode({
-            sensor_node_id: location.id,
-            sensor_node_site_name: location.title,
-            sensor_node_source_name: 'HabitatMap',
-            sensor_node_ismobile: true,
-            sensor_system: system
-        });
-
-        for (const measurand of measurands) {
-            if (!location.streams[measurand.input_param]) continue;
-
-            const station_id = location.streams[measurand.input_param].id;
-            const sensor_id = `${sta.sensor_node_source_name}-${station_id}-${measurand.parameter}`;
-
-            const sensor = new Sensor({
-                sensor_id,
-                measurand_parameter: measurand.parameter,
-                measurand_unit: measurand.normalized_unit
-            });
-            system.sensors.push(sensor);
-
-            const measurements = await mobile_measures(source, station_id);
-
-            for (const measurement of measurements) {
-                measures.push(new MobileMeasure({
-                    sensor_id,
-                    measure: measurand.normalize_value(measurement.value),
-                    timestamp: measurement.time,
-                    longitude: measurement.longitude,
-                    latitude: measurement.latitude
-                }));
-            }
-        }
-        stations.push(Providers.put_station(source.provider, sta));
+    get provider() {
+        return this.source.provider;
     }
 
-    await Promise.all(stations);
-    await Providers.put_measures(source.provider, measures);
-    return { source_name: 'habitatmap:mobile', locations: stations.length, measures: measures.length, from: measures.from, to: measures.to };
-}
+    get baseUrl() {
+        return this.source.meta.url;
+    }
 
-async function fixed_locations(source) {
-    const params = {
-        time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
-        time_to: String(Math.round(Date.now() / 1000)),
-        tags: '',
-        usernames: '',
-        sensor_name: 'airbeam2-pm2.5',
-        measurement_type: 'Particulate Matter',
-        unit_symbol: 'µg/m³'
-    };
+    async fetchMeasurands() {
+        this.measurands = await Measurand.getIndexedSupportedMeasurands(this.parameters);
+    }
 
-    const url = new URL('/api/fixed/active/sessions.json', source.meta.url);
-    url.searchParams.append('q', JSON.stringify(params));
+    /**
+     * Fetch the list of active fixed (stationary) sessions
+     * @returns {array} a list of sessions/locations
+     */
+    async fetchLocations() {
+        const now = Math.round(Date.now() / 1000);
+        const params = {
+            time_from: String(now - this.windowSeconds),
+            time_to: String(now),
+            tags: '',
+            usernames: '',
+            sensor_name: 'airbeam3-pm2.5',
+            measurement_type: 'Particulate Matter',
+            unit_symbol: 'µg/m³',
+            is_indoor: 'false'
+        };
 
-    const res = await request({
-        json: true,
-        method: 'GET',
-        url: url
-    });
-
-    return res.body.sessions;
-}
-
-async function mobile_measures(source, station_id) {
-    const url = new URL('/api/measurements.json', source.meta.url);
-    const start_time = Math.round(Date.now() / 1000) - 60 * 2;
-    const end_time = Math.round(Date.now() / 1000);
-    url.searchParams.append('start_time', start_time);
-    url.searchParams.append('stream_ids', station_id);
-
-    const res = await request({
-        json: true,
-        method: 'GET',
-        url: url
-    });
-
-    return checkResponseData(res.body, start_time, end_time);
-}
-
-async function mobile_locations(source) {
-    let page = 0;
-    const params = {
-        time_from: String(Math.round(Date.now() / 1000) - 60 * 2), // 60s * 2min
-        time_to: String(Math.round(Date.now() / 1000)),
-        tags: '',
-        usernames: '',
-        limit: 1000,
-        offset: 0,
-        west: -179.016741991,
-        east: 179.303570509,
-        south: -179.00001,
-        north: 179.000001,
-        sensor_name: 'airbeam2-pm2.5',
-        measurement_type: 'Particulate Matter',
-        unit_symbol: 'µg/m³'
-    };
-
-    let locs = [];
-
-    let fetchableSessionsCount;
-    do {
-        params.offset = page * 1000;
-
-        const url = new URL('/api/mobile/sessions.json', source.meta.url);
+        const url = new URL('/api/fixed/active/sessions.json', this.baseUrl);
         url.searchParams.append('q', JSON.stringify(params));
 
         const res = await request({
@@ -196,16 +59,131 @@ async function mobile_locations(source) {
             url: url
         });
 
-        locs = locs.concat(res.body.sessions);
-        console.log(`ok - pulled batch #${params.offset}: ${res.body.sessions.length} stations`);
+        const locations = res.body.sessions || [];
+        console.debug(`Found ${locations.length} fixed locations`);
+        return locations;
+    }
 
-        fetchableSessionsCount = res.body.fetchableSessionsCount;
-        ++page;
-    } while (fetchableSessionsCount > params.offset);
+    /**
+     * @param {number} stream_id
+     * @param {number} start_time seconds
+     * @param {number} end_time seconds
+     * @returns {array}
+     */
+    async fetchMeasurements(stream_id, start_time, end_time) {
+        const url = new URL('/api/v3/fixed_measurements/', this.baseUrl);
+        url.searchParams.append('stream_id', stream_id);
+        url.searchParams.append('start_time', start_time * 1000);
+        url.searchParams.append('end_time', end_time * 1000);
 
-    return locs;
+        const res = await request({
+            json: true,
+            method: 'GET',
+            url: url
+        });
+
+        const measurements = checkResponseData(res.body, start_time, end_time);
+        if (!measurements || !measurements.length) return [];
+
+        return measurements;
+    }
+
+    getLocationId(location) {
+        return `habitatmap-${location.id}`;
+    }
+
+    getSensorId(location, streamId, param) {
+        const measurand = this.measurands[param];
+        if (!measurand) {
+            throw new Error(`Could not find measurand for ${param}`);
+        }
+        return `${this.getLocationId(location)}-${measurand.parameter}`;
+    }
+
+    async fetchData() {
+        await this.fetchMeasurands();
+        const locations = await this.fetchLocations();
+
+        const now = Math.round(Date.now() / 1000);
+        const start_time = now - this.windowSeconds;
+        const end_time = now;
+
+        for (const location of locations) {
+            try {
+                this.locations.push({
+                    location: this.getLocationId(location),
+                    label: location.title,
+                    ismobile: false,
+                    lon: location.longitude,
+                    lat: location.latitude
+                });
+
+                for (const param of Object.keys(this.parameters)) {
+                    const stream = location.streams[param];
+                    if (!stream) continue;
+
+                    const measurements = await this.fetchMeasurements(stream.id, start_time, end_time);
+                    if (!measurements || measurements.length === 0) continue;
+
+                    const measurand = this.measurands[param];
+
+                    for (const m of measurements) {
+                        this.measures.push({
+                            sensor_id: this.getSensorId(location, stream.id, param),
+                            measure: measurand.normalize_value(m.value),
+                            // Convert the millisecond timestamp into a standard ISO 8601 string
+                            timestamp: new Date(m.time).toISOString()
+                        });
+                    }
+                }
+            } catch (e) {
+                console.warn(`Error adding location: ${e.message}`);
+            }
+        }
+
+        console.debug(`Found ${this.measures.length} measurements for ${this.locations.length} locations`);
+
+        this.fetched = true;
+    }
+
+    data() {
+        if (!this.fetched) {
+            console.warn('Data has not been fetched');
+        }
+        return {
+            meta: {
+                schema: 'v0.1',
+                source: 'habitatmap',
+                matching_method: 'ingest-id'
+            },
+            measures: this.measures.measures,
+            locations: this.locations
+        };
+    }
+
+    summary() {
+        if (!this.fetched) {
+            console.warn('Data has not been fetched');
+            return {
+                source_name: this.provider,
+                message: 'Data has not been fetched'
+            };
+        }
+        return {
+            source_name: this.provider,
+            locations: this.locations.length,
+            measures: this.measures.length,
+            from: this.measures.from,
+            to: this.measures.to
+        };
+    }
 }
 
 module.exports = {
-    processor
+    async processor(source) {
+        const client = new HabitatMapApi(source);
+        await client.fetchData();
+        await Providers.put_measures_json(client.provider, client.data());
+        return client.summary();
+    }
 };
