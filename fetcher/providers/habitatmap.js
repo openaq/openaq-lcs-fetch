@@ -12,8 +12,13 @@ class HabitatMapApi {
         this.fetched = false;
         this.source = source;
         this.measurands = null;
+        // From https://github.com/HabitatMap/AirCasting/blob/master/app/models/sensor.rb#L2 
         this.parameters = {
-            'AirBeam3-PM2.5': ['pm25', 'µg/m³']
+            'AirBeam2-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam3-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeamMini-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam-PM': ['pm25', 'µg/m³']
         };
         this.windowSeconds = 60 * 60 * 2;
 
@@ -44,7 +49,8 @@ class HabitatMapApi {
             time_to: String(now),
             tags: '',
             usernames: '',
-            sensor_name: 'airbeam3-pm2.5',
+            // sensor_name: 'airbeam3-pm2.5'
+            sensor_name: 'airbeam-pm2.5',
             measurement_type: 'Particulate Matter',
             unit_symbol: 'µg/m³',
             is_indoor: 'false'
