@@ -12,7 +12,7 @@ class HabitatMapApi {
         this.fetched = false;
         this.source = source;
         this.measurands = null;
-        // From https://github.com/HabitatMap/AirCasting/blob/master/app/models/sensor.rb#L2 
+        // From https://github.com/HabitatMap/AirCasting/blob/master/app/models/sensor.rb#L2
         this.parameters = {
             'AirBeam2-PM2.5': ['pm25', 'µg/m³'],
             'AirBeam3-PM2.5': ['pm25', 'µg/m³'],
@@ -39,14 +39,25 @@ class HabitatMapApi {
     }
 
     /**
+     * Start at 00:00 and end at 23:59 to deal with their API weirdness
+     *
+     * @returns {object} time_from and time_to in whole epoch seconds
+     */
+    sessionWindow() {
+        const DAY = 60 * 60 * 24;
+        const midnight = Math.floor(Date.now() / 1000 / DAY) * DAY;
+        return { time_from: midnight - DAY, time_to: midnight + DAY - 60 };
+    }
+
+    /**
      * Fetch the list of active fixed (stationary) sessions
      * @returns {array} a list of sessions/locations
      */
     async fetchLocations() {
-        const now = Math.round(Date.now() / 1000);
+        const { time_from, time_to } = this.sessionWindow();
         const params = {
-            time_from: String(now - this.windowSeconds),
-            time_to: String(now),
+            time_from: String(time_from),
+            time_to: String(time_to),
             tags: '',
             usernames: '',
             // sensor_name: 'airbeam3-pm2.5'
