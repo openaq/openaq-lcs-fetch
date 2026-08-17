@@ -3,6 +3,24 @@ const { request, checkResponseData } = require('../lib/utils');
 const { Measures, FixedMeasure } = require('../lib/measure');
 const { Measurand } = require('../lib/measurand');
 
+/**
+ * Bounding box for Nigeria. The sessions endpoint silently ignores the box
+ * unless all four coordinates are supplied, so they travel together.
+ */
+const NIGERIA_BBOX = {
+    west: 2.6,
+    east: 14.7,
+    south: 4.2,
+    north: 13.9
+};
+
+/**
+ * Habitmap / AirCasting stores times without timezones as 
+ * UTC epoch, so correct times are ahead of "real" time by the
+ * station's UTC offset. Africa/Lagos is UTC+1 year round.
+ */
+const NIGERIA_UTC_OFFSET_SECONDS = 60 * 60;
+
 class HabitatMapApi {
     /**
      *
@@ -12,8 +30,13 @@ class HabitatMapApi {
         this.fetched = false;
         this.source = source;
         this.measurands = null;
+        // From https://github.com/HabitatMap/AirCasting/blob/master/app/models/sensor.rb#L2
         this.parameters = {
-            'AirBeam3-PM2.5': ['pm25', 'µg/m³']
+            'AirBeam2-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam3-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeamMini-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam-PM2.5': ['pm25', 'µg/m³'],
+            'AirBeam-PM': ['pm25', 'µg/m³']
         };
         this.windowSeconds = 60 * 60 * 2;
 
@@ -34,17 +57,30 @@ class HabitatMapApi {
     }
 
     /**
-     * Fetch the list of active fixed (stationary) sessions
+     * Start at 00:00 and end at 23:59 to deal with their API weirdness
+     *
+     * @returns {object} time_from and time_to in whole epoch seconds
+     */
+    sessionWindow() {
+        const DAY = 60 * 60 * 24;
+        const midnight = Math.floor(Date.now() / 1000 / DAY) * DAY;
+        return { time_from: midnight - DAY, time_to: midnight + DAY - 60 };
+    }
+
+    /**
+     * Fetch the list of active fixed (stationary) sessions within Nigeria
      * @returns {array} a list of sessions/locations
      */
     async fetchLocations() {
-        const now = Math.round(Date.now() / 1000);
+        const { time_from, time_to } = this.sessionWindow();
         const params = {
-            time_from: String(now - this.windowSeconds),
-            time_to: String(now),
+            time_from: String(time_from),
+            time_to: String(time_to),
             tags: '',
             usernames: '',
-            sensor_name: 'airbeam3-pm2.5',
+            ...NIGERIA_BBOX,
+            // sensor_name: 'airbeam3-pm2.5'
+            sensor_name: 'airbeam-pm2.5',
             measurement_type: 'Particulate Matter',
             unit_symbol: 'µg/m³',
             is_indoor: 'false'
@@ -60,7 +96,7 @@ class HabitatMapApi {
         });
 
         const locations = res.body.sessions || [];
-        console.debug(`Found ${locations.length} fixed locations`);
+        console.debug(`Found ${locations.length} fixed locations in Nigeria`);
         return locations;
     }
 
@@ -105,8 +141,10 @@ class HabitatMapApi {
         const locations = await this.fetchLocations();
 
         const now = Math.round(Date.now() / 1000);
-        const start_time = now - this.windowSeconds;
-        const end_time = now;
+        // The API filters on its local-as-UTC column, so shift the requested
+        // window forward by the station offset. 
+        const start_time = now - this.windowSeconds + NIGERIA_UTC_OFFSET_SECONDS;
+        const end_time = now + NIGERIA_UTC_OFFSET_SECONDS;
 
         for (const location of locations) {
             try {
@@ -131,8 +169,11 @@ class HabitatMapApi {
                         this.measures.push({
                             sensor_id: this.getSensorId(location, stream.id, param),
                             measure: measurand.normalize_value(m.value),
-                            // Convert the millisecond timestamp into a standard ISO 8601 string
-                            timestamp: new Date(m.time).toISOString()
+                            // Undo the local-as-UTC convention, then convert the
+                            // millisecond timestamp into a standard ISO 8601 string
+                            timestamp: new Date(
+                                m.time - NIGERIA_UTC_OFFSET_SECONDS * 1000
+                            ).toISOString()
                         });
                     }
                 }
